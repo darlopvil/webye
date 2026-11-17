@@ -1,0 +1,45 @@
+{{ define "contenido" }}
+{{ with .Busqueda }}
+<section class="resultados">
+    <p class="resumen">
+        {{ if .SinResults }}Nada en stock para «{{ $.Consulta }}».
+        {{ else }}<strong>{{ miles .Total }}</strong> {{ if eq .Total 1 }}resultado{{ else }}resultados{{ end }} para «{{ $.Consulta }}»{{ end }}
+    </p>
+    {{ if .Recortado }}
+    <p class="aviso-corto">CeX solo deja recorrer los primeros 1.000. Afina la búsqueda para llegar al resto.</p>
+    {{ end }}
+
+    <ul class="rejilla">
+        {{ range .Productos }}
+        <li class="tarjeta">
+            <a class="tarjeta-enlace" href="/product-detail/?id={{ .ID }}">
+                <div class="tarjeta-foto" aria-hidden="true"></div>
+                <span class="tarjeta-categoria">{{ .Categoria }}</span>
+                <span class="tarjeta-nombre">{{ .Nombre }}</span>
+            </a>
+            <p class="tarjeta-precio">{{ euros .Venta }}</p>
+            <p class="tarjeta-compra">
+                Te dan <strong>{{ euros .Efectivo }}</strong> en efectivo
+                o <strong>{{ euros .Vale }}</strong> en vale
+            </p>
+            <p class="tarjeta-stock">
+                {{ if gt .Online 0 }}<span class="sello">Online</span>{{ end }}
+                {{ if gt .Tienda 0 }}<span class="sello">En tienda</span>{{ end }}
+            </p>
+        </li>
+        {{ end }}
+    </ul>
+
+    {{ if .Paginas }}
+    <nav class="paginacion" aria-label="Páginas">
+        {{ if .Anterior }}<a href="{{ .Anterior }}" rel="prev">« Anterior</a>{{ end }}
+        {{ range .Paginas }}
+            {{ if .Actual }}<span class="actual" aria-current="page">{{ .Numero }}</span>
+            {{ else }}<a href="{{ .URL }}">{{ .Numero }}</a>{{ end }}
+        {{ end }}
+        {{ if .Siguiente }}<a href="{{ .Siguiente }}" rel="next">Siguiente »</a>{{ end }}
+    </nav>
+    {{ end }}
+</section>
+{{ end }}
+{{ end }}

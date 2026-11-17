@@ -66,7 +66,7 @@ a:hover { color: var(--blanco); }
 .contenido,
 .pie {
     width: 100%;
-    max-width: 68rem;
+    max-width: 112rem;
     margin: 0 auto;
     padding: .75rem 1rem;
 }
@@ -358,3 +358,194 @@ a:hover { color: var(--blanco); }
 }
 
 .pie p { margin: .25rem 0; }
+
+/* ---------- search results ---------- */
+
+.resultados {
+    padding: 1.25rem 0 2rem;
+}
+
+.resumen {
+    margin: 0 0 .25rem;
+    font-size: 1.1rem;
+}
+
+.resumen strong {
+    font-family: var(--titulo);
+    font-weight: 400;
+    font-size: 1.5rem;
+    color: var(--rojo-vivo);
+}
+
+.aviso-corto {
+    margin: 0;
+    font-size: .9rem;
+    color: var(--gris);
+}
+
+.rejilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+    gap: 1.25rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tarjeta {
+    display: flex;
+    flex-direction: column;
+    padding: .75rem;
+    background: #151515;
+    border: 2px solid #262626;
+    box-shadow: 4px 4px 0 var(--negro);
+}
+
+.tarjeta:hover {
+    border-color: var(--rojo);
+    box-shadow: 4px 4px 0 var(--rojo);
+}
+
+.tarjeta-enlace {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    color: var(--blanco);
+    text-decoration: none;
+}
+
+/* Room for the product photo (#7): a square, so the grid does not jump
+   when images arrive. */
+.tarjeta-foto {
+    aspect-ratio: 1;
+    margin-bottom: .5rem;
+    background:
+        repeating-linear-gradient(-45deg, transparent 0 10px, rgba(255, 255, 255, .03) 10px 12px),
+        #1d1d1d;
+}
+
+.tarjeta-categoria {
+    font-size: .75rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--gris);
+}
+
+.tarjeta-nombre {
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.tarjeta-enlace:hover .tarjeta-nombre {
+    color: var(--rojo-vivo);
+}
+
+.tarjeta-precio {
+    margin: .6rem 0 0;
+    font-family: var(--titulo);
+    font-size: 1.9rem;
+    line-height: 1;
+    color: var(--blanco);
+    text-shadow: 3px 3px 0 var(--rojo-oscuro);
+}
+
+.tarjeta-compra {
+    margin: .4rem 0 0;
+    font-size: .85rem;
+    color: #cfcfca;
+}
+
+.tarjeta-compra strong {
+    color: var(--blanco);
+}
+
+.tarjeta-stock {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin: auto 0 0;
+    padding-top: .6rem;
+}
+
+.sello {
+    padding: .05rem .45rem;
+    font-family: var(--titulo);
+    font-size: .8rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--negro);
+    background: var(--blanco);
+    transform: rotate(-2deg);
+}
+
+.paginacion {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .5rem;
+    margin-top: 2rem;
+}
+
+.paginacion a,
+.paginacion .actual {
+    min-width: 2.4rem;
+    padding: .35rem .7rem;
+    font-family: var(--titulo);
+    font-size: 1.1rem;
+    text-align: center;
+    text-decoration: none;
+    border: 2px solid var(--blanco);
+}
+
+.paginacion a {
+    color: var(--blanco);
+}
+
+.paginacion a:hover {
+    color: var(--negro);
+    background: var(--blanco);
+}
+
+.paginacion .actual {
+    color: var(--blanco);
+    background: var(--rojo);
+    border-color: var(--rojo);
+    box-shadow: 3px 3px 0 var(--blanco);
+}
+
+/* Two columns on phones: one product per screen is too much scrolling. */
+@media (max-width: 30rem) {
+    .rejilla {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .75rem;
+    }
+
+    .tarjeta {
+        padding: .5rem;
+    }
+
+    .tarjeta-nombre {
+        font-size: .9rem;
+    }
+
+    .tarjeta-precio {
+        font-size: 1.5rem;
+    }
+
+    .tarjeta-compra {
+        font-size: .78rem;
+    }
+}
+
+/* Desktop: as many products per row as CeX shows, without its sidebar. */
+@media (min-width: 48rem) {
+    .rejilla { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 64rem) {
+    .rejilla { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (min-width: 90rem) {
+    .rejilla { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}

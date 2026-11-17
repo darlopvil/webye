@@ -47,6 +47,20 @@ func main() {
 		os.Exit(sondear(*probe))
 	}
 
+	srv := &http.Server{
+		Addr:              *host + ":" + strconv.Itoa(*puerto),
+		Handler:           rutas(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	log.Printf("Listening on %s", srv.Addr)
+	log.Fatal(srv.ListenAndServe())
+}
+
+// rutas builds every route of the site.
+func rutas() http.Handler {
 	mux := http.NewServeMux()
 
 	// The home page never talks to CeX.
@@ -70,18 +84,14 @@ func main() {
 		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
 	})
 
+	// Search, with the same paths as CeX, so a CeX link only needs its host
+	// changed. Limited per client: each new search may cost a request to CeX.
+	mux.Handle("/search/{$}", limitePaginas.envolver(http.HandlerFunc(paginaBusqueda)))
+	mux.Handle("/search", limitePaginas.envolver(http.HandlerFunc(paginaBusqueda)))
+
 	mux.HandleFunc("/robots.txt", robots)
 
 	mux.Handle("/static/", http.FileServer(http.FS(estaticosFS)))
 
-	srv := &http.Server{
-		Addr:              *host + ":" + strconv.Itoa(*puerto),
-		Handler:           cabeceras(mux),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       60 * time.Second,
-	}
-	log.Printf("Listening on %s", srv.Addr)
-	log.Fatal(srv.ListenAndServe())
+	return cabeceras(mux)
 }
