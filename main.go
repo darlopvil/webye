@@ -65,11 +65,13 @@ func main() {
 		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
 	})
 
+	mux.HandleFunc("/robots.txt", robots)
+
 	mux.Handle("/static/", http.FileServer(http.FS(estaticosFS)))
 
 	srv := &http.Server{
 		Addr:              *host + ":" + strconv.Itoa(*puerto),
-		Handler:           mux,
+		Handler:           cabeceras(mux),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,
