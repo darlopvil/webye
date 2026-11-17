@@ -40,7 +40,12 @@ func main() {
 	}
 	puerto := flag.Int("p", puertoPorDefecto, "Listen port")
 	host := flag.String("h", entorno("WEBYE_HOST", "0.0.0.0"), "Listen address")
+	probe := flag.String("probe", "", "Run one search through the guardian, print a summary and exit")
 	flag.Parse()
+
+	if *probe != "" {
+		os.Exit(sondear(*probe))
+	}
 
 	mux := http.NewServeMux()
 

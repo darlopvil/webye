@@ -294,3 +294,13 @@ func TestCacheStaysWithinBudget(t *testing.T) {
 		t.Fatal("the newest entry should still be there")
 	}
 }
+
+func TestNetworkErrorsDoNotLeakTheURL(t *testing.T) {
+	g := nuevoGuardian("prueba", "application/json", nuevaCache(cacheMaxima))
+	_, err := g.obtener(context.Background(), "a", ttlFicha, func(ctx context.Context) (*http.Request, error) {
+		return http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:1/queries?x-algolia-api-key=SECRETO&q=busqueda", nil)
+	})
+	if err == nil || strings.Contains(err.Error(), "SECRETO") || strings.Contains(err.Error(), "busqueda") {
+		t.Fatalf("network error leaks the URL: %v", err)
+	}
+}

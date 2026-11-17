@@ -9,6 +9,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -76,6 +77,18 @@ var (
 	reMaxAge        = regexp.MustCompile(`(?i)(?:^|[,\s])max-age=(\d+)`)
 	reSinAlmacenaje = regexp.MustCompile(`(?i)(?:^|[,\s])(no-store|no-cache|private)(?:$|[,\s])`)
 )
+
+// errorRespuesta carries the response that made the guardian give up, so a
+// caller can tell, for example, a rejected key from a Cloudflare block.
+type errorRespuesta struct {
+	Estado int
+	Tipo   string
+	Cuerpo []byte
+	causa  error
+}
+
+func (e *errorRespuesta) Error() string { return fmt.Sprintf("%v: status %d", e.causa, e.Estado) }
+func (e *errorRespuesta) Unwrap() error { return e.causa }
 
 // respuesta is what the callers get back: only the parts webye uses.
 type respuesta struct {
@@ -162,6 +175,12 @@ func (g *guardian) obtener(ctx context.Context, clave string, ttl time.Duration,
 
 		res, err := g.cliente.Do(req)
 		if err != nil {
+			// Go's error repeats the full URL, which can carry the search
+			// terms and the Algolia key. Keep only the host.
+			var ue *url.Error
+			if errors.As(err, &ue) {
+				return respuesta{}, fmt.Errorf("%s %s: %w", ue.Op, req.URL.Host, ue.Err)
+			}
 			return respuesta{}, err
 		}
 		defer res.Body.Close()
@@ -197,7 +216,7 @@ func (g *guardian) evaluar(res *http.Response, cuerpo []byte) error {
 	switch {
 	case estado == http.StatusTooManyRequests, estado == http.StatusForbidden, estado >= 500:
 		g.pausar(res, cuerpo)
-		return fmt.Errorf("%w: status %d", errBloqueo, estado)
+		return &errorRespuesta{Estado: estado, Tipo: res.Header.Get("Content-Type"), Cuerpo: cuerpo, causa: errBloqueo}
 	case estado >= 300 && estado < 400:
 		return fmt.Errorf("%w: status %d", errRedireccion, estado)
 	case estado == http.StatusOK && !g.tipoValido(res.Header.Get("Content-Type")):
