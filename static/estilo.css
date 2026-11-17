@@ -1,0 +1,124 @@
+:root {
+    color-scheme: light dark;
+    --fondo: #fafaf7;
+    --texto: #1d1d1b;
+    --tenue: #6b6b66;
+    --borde: #d9d9d2;
+    --campo: #ffffff;
+    --acento: #0b7a6f;
+    --sobre-acento: #fafaf7;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --fondo: #141413;
+        --texto: #ecece6;
+        --tenue: #9a9a92;
+        --borde: #33332f;
+        --campo: #1e1e1c;
+        --acento: #3cc2b2;
+        --sobre-acento: #141413;
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font: 16px/1.5 system-ui, sans-serif;
+    background: var(--fondo);
+    color: var(--texto);
+}
+
+a { color: var(--acento); }
+
+.tenue { color: var(--tenue); }
+
+.cabecera { border-bottom: 1px solid var(--borde); }
+
+.cabecera-interior,
+.contenido,
+.pie {
+    width: 100%;
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: .75rem 1rem;
+}
+
+.cabecera-interior {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem 1.5rem;
+}
+
+.marca {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--texto);
+    text-decoration: none;
+}
+
+.marca span { color: var(--acento); }
+
+.contenido { flex: 1; }
+
+.buscador {
+    display: flex;
+    flex: 1;
+    gap: .5rem;
+    min-width: 16rem;
+}
+
+.buscador input {
+    flex: 1;
+    min-width: 0;
+    padding: .55rem .75rem;
+    font: inherit;
+    color: inherit;
+    background: var(--campo);
+    border: 1px solid var(--borde);
+    border-radius: .5rem;
+}
+
+.buscador button {
+    padding: .55rem 1rem;
+    font: inherit;
+    font-weight: 600;
+    color: var(--sobre-acento);
+    background: var(--acento);
+    border: 0;
+    border-radius: .5rem;
+    cursor: pointer;
+}
+
+.portada {
+    padding: 4rem 0 2rem;
+    text-align: center;
+}
+
+.portada h1 {
+    margin: 0 0 .5rem;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+
+.buscador-grande {
+    max-width: 36rem;
+    margin: 1.5rem auto 0;
+}
+
+.aviso {
+    padding: 3rem 0;
+    text-align: center;
+}
+
+.pie {
+    font-size: .875rem;
+    text-align: center;
+    border-top: 1px solid var(--borde);
+}
+
+.pie p { margin: .25rem 0; }
