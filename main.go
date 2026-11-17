@@ -89,6 +89,10 @@ func rutas() http.Handler {
 	mux.Handle("/search/{$}", limitePaginas.envolver(http.HandlerFunc(paginaBusqueda)))
 	mux.Handle("/search", limitePaginas.envolver(http.HandlerFunc(paginaBusqueda)))
 
+	// Product pages, same URL as CeX, same per-client limit as search.
+	mux.Handle("/product-detail/{$}", limitePaginas.envolver(http.HandlerFunc(paginaFicha)))
+	mux.Handle("/product-detail", limitePaginas.envolver(http.HandlerFunc(paginaFicha)))
+
 	mux.HandleFunc("/robots.txt", robots)
 
 	mux.Handle("/static/", http.FileServer(http.FS(estaticosFS)))

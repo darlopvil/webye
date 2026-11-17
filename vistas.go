@@ -20,11 +20,14 @@ type datosPagina struct {
 	// big one.
 	Inicio   bool
 	Busqueda *vistaBusqueda
+	Ficha    *vistaFicha
 }
 
 var funciones = template.FuncMap{
-	"euros": euros,
-	"miles": miles,
+	"euros":   euros,
+	"miles":   miles,
+	"deref":   func(v *float64) float64 { return *v },
+	"decimal": decimal,
 }
 
 // Each page is parsed into its own set together with the base template,
@@ -40,6 +43,7 @@ func cargarPlantilla(pagina string) *template.Template {
 var plantillas = map[string]*template.Template{
 	"inicio":     cargarPlantilla("inicio"),
 	"resultados": cargarPlantilla("resultados"),
+	"ficha":      cargarPlantilla("ficha"),
 	"about":      cargarPlantilla("about"),
 	"error":      cargarPlantilla("error"),
 }
@@ -87,4 +91,9 @@ func abs(n int) int {
 		return -n
 	}
 	return n
+}
+
+// decimal writes a number with one decimal the Spanish way: 4.8 → "4,8".
+func decimal(v float64) string {
+	return strings.Replace(strconv.FormatFloat(v, 'f', 1, 64), ".", ",", 1)
 }

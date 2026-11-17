@@ -1,0 +1,52 @@
+{{ define "contenido" }}
+{{ with .Ficha }}
+<article class="ficha">
+    <p class="miga">{{ if .Supercategoria }}{{ .Supercategoria }} › {{ end }}{{ .Categoria }}</p>
+
+    <div class="ficha-cabeza">
+        <div class="ficha-foto" aria-hidden="true"></div>
+
+        <div class="ficha-datos">
+            <h1 class="ficha-nombre">{{ .Nombre }}</h1>
+            {{ with .Valoracion }}<p class="ficha-valoracion">★ {{ decimal (deref .) }}</p>{{ end }}
+
+            <p class="ficha-precio">{{ euros .Venta }}</p>
+            <p class="ficha-compra">
+                Te dan <strong>{{ euros .Efectivo }}</strong> en efectivo
+                o <strong>{{ euros .Vale }}</strong> en vale
+            </p>
+
+            <p class="tarjeta-stock">
+                {{ if gt .Online 0 }}<span class="sello">En stock online</span>{{ end }}
+                {{ if gt .Tienda 0 }}<span class="sello">Recogida en tienda</span>{{ end }}
+                {{ if and (eq .Online 0) (eq .Tienda 0) }}<span class="sello sello-agotado">Agotado</span>{{ end }}
+            </p>
+
+            <ul class="ficha-historial">
+                {{ if .HuboOtroPrecio }}<li>Antes: {{ euros (deref .PrecioAnterior) }}</li>{{ end }}
+                {{ with .PrecioSalida }}<li>Salió a: {{ euros . }}</li>{{ end }}
+                {{ with .FechaCambio }}<li>Último cambio de precio: {{ . }}</li>{{ end }}
+            </ul>
+        </div>
+    </div>
+
+    {{ if .Especificaciones }}
+    <section class="texto">
+        <h2>Especificaciones</h2>
+        <table class="especificaciones">
+            {{ range .Especificaciones }}
+            <tr><th scope="row">{{ .Nombre }}</th><td>{{ .Valor }}</td></tr>
+            {{ end }}
+        </table>
+    </section>
+    {{ end }}
+
+    {{ if .DescripcionHTML }}
+    <section class="texto descripcion">
+        <h2>Descripción</h2>
+        {{ .DescripcionHTML }}
+    </section>
+    {{ end }}
+</article>
+{{ end }}
+{{ end }}
