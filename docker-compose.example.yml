@@ -1,8 +1,8 @@
-# Ejemplo de despliegue. Copiar a docker-compose.yml y adaptar.
+# Example deployment. Copy to docker-compose.yml and adapt it.
 #
-# El servicio no publica puertos: se asume un proxy inverso que lo alcanza
-# por nombre de contenedor. La red del proxy no puede ser "internal", porque
-# el contenedor necesita salir a CeX.
+# The service publishes no ports: it assumes a reverse proxy that reaches it
+# by container name. The proxy network cannot be "internal", because the
+# container needs outbound access to CeX.
 
 services:
   webye_app:
@@ -14,7 +14,7 @@ services:
     environment:
       GOMEMLIMIT: 32MiB
     mem_limit: 64m
-    # webye no escribe nada en disco.
+    # webye writes nothing to disk.
     read_only: true
     cap_drop:
       - ALL
@@ -23,8 +23,8 @@ services:
     # ports:
     #   - "127.0.0.1:8080:8080"
     networks:
-      - red_del_proxy_inverso
+      - proxy_network
 
 networks:
-  red_del_proxy_inverso:
+  proxy_network:
     external: true

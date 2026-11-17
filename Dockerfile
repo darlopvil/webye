@@ -7,12 +7,12 @@ RUN apk add --no-cache ca-certificates
 
 WORKDIR /src
 
-# Capa cacheada: solo se rehace si cambian las dependencias. El comodín
-# admite que go.sum aún no exista mientras no haya dependencias externas.
+# Cached layer: only rebuilt when the dependencies change. The wildcard
+# allows go.sum to be missing while there are no external dependencies.
 COPY go.* ./
 RUN go mod download
 
-# templates/ y static/ van embebidos en el binario con //go:embed
+# templates/ and static/ are embedded in the binary with //go:embed
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
@@ -23,7 +23,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 # ---------- runtime ----------
 FROM scratch
 
-# Necesarios para el TLS de salida hacia CeX
+# Needed for outbound TLS to CeX
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /webye /webye
 

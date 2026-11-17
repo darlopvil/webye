@@ -1,10 +1,17 @@
 {{ define "contenido" }}
 <section class="portada">
-    <h1>Busca en CeX sin que CeX te vea</h1>
-    <p class="tenue">Precio de venta y lo que CeX paga por cada producto, sin rastreadores, sin JavaScript y sin que tu navegador llegue a hablar con CeX.</p>
+    <h1>
+        <span class="titular">Busca en <span class="cex">CeX</span></span>
+        <span class="titular titular-rojo">rápido y sin movidas</span>
+    </h1>
     <form class="buscador buscador-grande" action="/search/" method="get" role="search">
         <input type="search" name="stext" placeholder="¿Qué buscas?" aria-label="Buscar en CeX" required autofocus>
         <button type="submit">Buscar</button>
     </form>
+    <ul class="pegatinas">
+        <li><span class="cero">0</span> rastreadores</li>
+        <li><span class="cero">0</span> JavaScript</li>
+        <li><span class="cero">0</span> cookies</li>
+    </ul>
 </section>
 {{ end }}

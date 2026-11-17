@@ -7,19 +7,19 @@ import (
 	"net/http"
 )
 
-// datosPagina es lo que reciben todas las plantillas. Cada página nueva
-// añadirá aquí sus propios campos.
+// datosPagina is what every template receives. Each new page adds its own
+// fields here.
 type datosPagina struct {
 	Titulo   string
 	Mensaje  string
 	Consulta string
-	// Inicio oculta el buscador de la cabecera en la portada, que ya tiene
-	// el suyo en grande.
+	// Inicio hides the header search box on the home page, which has its own
+	// big one.
 	Inicio bool
 }
 
-// Cada página se parsea en su propio conjunto junto a la base, porque todas
-// definen el mismo bloque "contenido".
+// Each page is parsed into its own set together with the base template,
+// because every page defines the same "contenido" block.
 func cargarPlantilla(pagina string) *template.Template {
 	return template.Must(template.New("base.html").ParseFS(
 		plantillasFS,
@@ -30,16 +30,17 @@ func cargarPlantilla(pagina string) *template.Template {
 
 var plantillas = map[string]*template.Template{
 	"inicio": cargarPlantilla("inicio"),
+	"about":  cargarPlantilla("about"),
 	"error":  cargarPlantilla("error"),
 }
 
-// renderizar ejecuta la plantilla en un búfer antes de escribir nada. Así un
-// fallo a mitad de página se convierte en un 500 limpio y no en media página
-// servida con un 200.
+// renderizar executes the template into a buffer before writing anything, so
+// a failure halfway through the page becomes a clean 500 instead of half a
+// page served with a 200.
 func renderizar(w http.ResponseWriter, estado int, pagina string, datos datosPagina) {
 	var buf bytes.Buffer
 	if err := plantillas[pagina].ExecuteTemplate(&buf, "base.html", datos); err != nil {
-		log.Printf("error al renderizar %s: %v", pagina, err)
+		log.Printf("error rendering %s: %v", pagina, err)
 		http.Error(w, "Error interno", http.StatusInternalServerError)
 		return
 	}

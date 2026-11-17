@@ -1,24 +1,27 @@
-:root {
-    color-scheme: light dark;
-    --fondo: #fafaf7;
-    --texto: #1d1d1b;
-    --tenue: #6b6b66;
-    --borde: #d9d9d2;
-    --campo: #ffffff;
-    --acento: #0b7a6f;
-    --sobre-acento: #fafaf7;
+/* Anton: SIL Open Font License 1.1. Permanent Marker: Apache License 2.0.
+   The licenses sit next to the fonts, in /static/fuentes/. */
+@font-face {
+    font-family: "Anton";
+    src: url("/static/fuentes/anton.woff2") format("woff2");
+    font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --fondo: #141413;
-        --texto: #ecece6;
-        --tenue: #9a9a92;
-        --borde: #33332f;
-        --campo: #1e1e1c;
-        --acento: #3cc2b2;
-        --sobre-acento: #141413;
-    }
+@font-face {
+    font-family: "Rotulador";
+    src: url("/static/fuentes/permanent-marker.woff2") format("woff2");
+    font-display: swap;
+}
+
+:root {
+    color-scheme: dark;
+    --negro: #0b0b0b;
+    --gris: #8c8c8c;
+    --blanco: #f4f4f0;
+    --rojo: #e3061b;
+    --rojo-vivo: #ff3347;
+    --rojo-oscuro: #9e0012;
+    --titulo: "Anton", Impact, "Arial Narrow Bold", "Liberation Sans Narrow", sans-serif;
+    --rotulador: "Rotulador", "Comic Sans MS", cursive;
 }
 
 * { box-sizing: border-box; }
@@ -29,15 +32,35 @@ body {
     display: flex;
     flex-direction: column;
     font: 16px/1.5 system-ui, sans-serif;
-    background: var(--fondo);
-    color: var(--texto);
+    color: var(--blanco);
+    background:
+        radial-gradient(ellipse at top, rgba(227, 6, 27, .18), transparent 60%),
+        repeating-linear-gradient(-45deg, transparent 0 22px, rgba(255, 255, 255, .025) 22px 24px),
+        var(--negro);
+    background-attachment: fixed;
 }
 
-a { color: var(--acento); }
+::selection {
+    color: var(--blanco);
+    background: var(--rojo);
+}
 
-.tenue { color: var(--tenue); }
+a {
+    color: var(--rojo-vivo);
+    text-decoration-style: wavy;
+    text-underline-offset: 3px;
+}
 
-.cabecera { border-bottom: 1px solid var(--borde); }
+a:hover { color: var(--blanco); }
+
+.tenue { color: var(--gris); }
+
+/* ---------- header ---------- */
+
+.cabecera {
+    background: linear-gradient(var(--rojo-vivo), var(--rojo) 45%, var(--rojo-oscuro));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+}
 
 .cabecera-interior,
 .contenido,
@@ -56,69 +79,282 @@ a { color: var(--acento); }
 }
 
 .marca {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--texto);
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+    padding-right: .4rem;
     text-decoration: none;
 }
 
-.marca span { color: var(--acento); }
+.marca-we {
+    font-family: var(--titulo);
+    font-size: 2.1rem;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    color: var(--blanco);
+    text-shadow: 3px 3px 0 var(--negro);
+}
 
-.contenido { flex: 1; }
+.marca-bye {
+    display: inline-block;
+    margin-left: -.35rem;
+    font-family: var(--rotulador);
+    font-size: 2.3rem;
+    line-height: 1;
+    color: var(--negro);
+    transform: rotate(-10deg) translateY(.3rem);
+}
+
+.marca:hover .marca-bye { color: var(--blanco); }
+
+/* Menu, always at the top right */
+.menu {
+    margin-left: auto;
+    display: flex;
+    gap: 1.25rem;
+}
+
+.menu a {
+    font-family: var(--titulo);
+    font-size: 1.05rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--blanco);
+    text-decoration: none;
+    text-shadow: 2px 2px 0 var(--negro);
+}
+
+.menu a:hover {
+    color: var(--negro);
+    text-shadow: none;
+}
+
+/* Caution tape between blocks */
+.cinta {
+    height: 12px;
+    background: repeating-linear-gradient(-45deg, var(--negro) 0 12px, var(--blanco) 12px 24px);
+    border-block: 2px solid var(--negro);
+}
+
+/* ---------- search box ---------- */
 
 .buscador {
     display: flex;
     flex: 1;
-    gap: .5rem;
     min-width: 16rem;
 }
 
 .buscador input {
     flex: 1;
     min-width: 0;
-    padding: .55rem .75rem;
+    padding: .5rem .75rem;
     font: inherit;
-    color: inherit;
-    background: var(--campo);
-    border: 1px solid var(--borde);
-    border-radius: .5rem;
+    color: var(--blanco);
+    background: var(--negro);
+    border: 2px solid var(--negro);
+    border-right: 0;
+    border-radius: 0;
+    outline: none;
 }
 
+.buscador input:focus { border-color: var(--blanco); }
+
 .buscador button {
-    padding: .55rem 1rem;
-    font: inherit;
-    font-weight: 600;
-    color: var(--sobre-acento);
-    background: var(--acento);
-    border: 0;
-    border-radius: .5rem;
+    padding: .45rem 1.1rem;
+    font-family: var(--titulo);
+    font-size: 1.05rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--blanco);
+    background: var(--negro);
+    border: 2px solid var(--negro);
+    border-radius: 0;
     cursor: pointer;
 }
 
+.buscador button:hover {
+    color: var(--negro);
+    background: var(--blanco);
+}
+
+/* The home page one: big, white and with a sticker shadow */
+.buscador-grande {
+    max-width: 38rem;
+    margin: 2.5rem auto 0;
+    box-shadow: 7px 7px 0 var(--rojo);
+    transform: rotate(-1deg);
+}
+
+.buscador-grande input {
+    padding: .8rem 1rem;
+    font-size: 1.15rem;
+    color: var(--negro);
+    background: var(--blanco);
+    border: 3px solid var(--negro);
+    border-right: 0;
+}
+
+.buscador-grande input:focus { border-color: var(--negro); }
+
+.buscador-grande button {
+    padding: .6rem 1.6rem;
+    font-size: 1.35rem;
+    border: 3px solid var(--negro);
+    /* Glossy 2000s button */
+    background: linear-gradient(var(--rojo-vivo) 0, var(--rojo) 50%, var(--rojo-oscuro) 51%, var(--rojo) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45);
+    text-shadow: 2px 2px 0 var(--negro);
+}
+
+.buscador-grande button:hover {
+    color: var(--blanco);
+    background: linear-gradient(#ff6675 0, var(--rojo-vivo) 50%, var(--rojo) 51%, var(--rojo-vivo) 100%);
+}
+
+/* ---------- home page ---------- */
+
+.contenido { flex: 1; }
+
 .portada {
-    padding: 4rem 0 2rem;
+    padding: 3.5rem 0 2.5rem;
     text-align: center;
 }
 
 .portada h1 {
-    margin: 0 0 .5rem;
-    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    margin: 0;
+    line-height: .95;
 }
 
-.buscador-grande {
-    max-width: 36rem;
-    margin: 1.5rem auto 0;
+.titular {
+    display: block;
+    font-family: var(--titulo);
+    font-weight: 400;
+    font-size: clamp(2.6rem, 9vw, 5.2rem);
+    text-transform: uppercase;
+    letter-spacing: .01em;
+    text-shadow: 4px 4px 0 var(--rojo-oscuro);
 }
+
+.titular .cex { text-transform: none; }
+
+.titular-rojo {
+    color: var(--rojo);
+    text-shadow: 4px 4px 0 var(--blanco);
+    transform: rotate(-2deg);
+}
+
+.pegatinas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem 2rem;
+    margin: 3rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pegatinas li {
+    position: relative;
+    padding: .45rem 1rem .35rem;
+    font-family: var(--rotulador);
+    font-size: 1.15rem;
+    color: var(--negro);
+    background: var(--blanco);
+    box-shadow: 3px 3px 0 var(--rojo);
+}
+
+/* Slashed zero, like on old terminals: the marker font's zero looks like a
+   drop. It is still a real 0 for screen readers and when copied. */
+.pegatinas .cero {
+    position: relative;
+    display: inline-block;
+}
+
+.pegatinas .cero::after {
+    content: "";
+    position: absolute;
+    top: 5%;
+    bottom: 5%;
+    left: 50%;
+    width: 2.5px;
+    margin-left: -1px;
+    background: currentColor;
+    border-radius: 2px;
+    transform: rotate(32deg);
+}
+
+/* Tape on top of each sticker */
+.pegatinas li::before {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    width: 46px;
+    height: 16px;
+    margin-left: -23px;
+    background: rgba(255, 255, 255, .35);
+    transform: rotate(-4deg);
+}
+
+.pegatinas li:nth-child(1) { transform: rotate(-5deg); }
+.pegatinas li:nth-child(2) { transform: rotate(3deg); }
+.pegatinas li:nth-child(3) { transform: rotate(-2deg); }
+
+/* ---------- notices and errors ---------- */
 
 .aviso {
     padding: 3rem 0;
     text-align: center;
 }
 
+.aviso .titular { font-size: clamp(2rem, 7vw, 3.6rem); }
+
+/* ---------- text pages ---------- */
+
+.texto {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: 2rem 0 3rem;
+}
+
+.texto .titular {
+    font-size: clamp(2.2rem, 7vw, 3.8rem);
+    line-height: 1;
+}
+
+.texto h2 {
+    display: inline-block;
+    margin: 2.5rem 0 .5rem;
+    padding: .1rem .6rem;
+    font-family: var(--titulo);
+    font-weight: 400;
+    font-size: 1.6rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    background: var(--rojo);
+    box-shadow: 4px 4px 0 var(--blanco);
+    transform: rotate(-1.5deg);
+    scroll-margin-top: 1rem;
+}
+
+.texto ul {
+    padding-left: 1.25rem;
+}
+
+.texto li {
+    margin: .4rem 0;
+}
+
+.texto li::marker {
+    color: var(--rojo);
+}
+
+/* ---------- footer ---------- */
+
 .pie {
     font-size: .875rem;
     text-align: center;
-    border-top: 1px solid var(--borde);
 }
 
 .pie p { margin: .25rem 0; }

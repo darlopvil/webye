@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	// Base de zonas horarias embebida: la imagen es scratch y no trae
-	// /usr/share/zoneinfo, pero así la variable TZ funciona igual.
+	// Embedded time zone database: the scratch image has no
+	// /usr/share/zoneinfo, and this keeps the TZ variable working anyway.
 	_ "time/tzdata"
 )
 
@@ -22,8 +22,8 @@ var (
 	estaticosFS embed.FS
 )
 
-// entorno devuelve el valor de una variable de entorno, o el valor por
-// defecto si no está definida o está vacía.
+// entorno returns the value of an environment variable, or the default
+// value when it is unset or empty.
 func entorno(nombre, porDefecto string) string {
 	if v := os.Getenv(nombre); v != "" {
 		return v
@@ -32,19 +32,19 @@ func entorno(nombre, porDefecto string) string {
 }
 
 func main() {
-	// El host por defecto es 0.0.0.0 y no localhost: dentro de un contenedor,
-	// localhost deja el proceso inalcanzable.
+	// The default host is 0.0.0.0 rather than localhost: inside a container,
+	// localhost would leave the process unreachable.
 	puertoPorDefecto, err := strconv.Atoi(entorno("WEBYE_PORT", "8080"))
 	if err != nil {
-		log.Fatalf("WEBYE_PORT no es un número válido: %v", err)
+		log.Fatalf("WEBYE_PORT is not a valid number: %v", err)
 	}
-	puerto := flag.Int("p", puertoPorDefecto, "Puerto de escucha")
-	host := flag.String("h", entorno("WEBYE_HOST", "0.0.0.0"), "Dirección de escucha")
+	puerto := flag.Int("p", puertoPorDefecto, "Listen port")
+	host := flag.String("h", entorno("WEBYE_HOST", "0.0.0.0"), "Listen address")
 	flag.Parse()
 
 	mux := http.NewServeMux()
 
-	// La portada nunca habla con CeX.
+	// The home page never talks to CeX.
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			renderizar(w, http.StatusNotFound, "error", datosPagina{
@@ -56,7 +56,11 @@ func main() {
 		renderizar(w, http.StatusOK, "inicio", datosPagina{Inicio: true})
 	})
 
-	// Los navegadores piden /favicon.ico sin mirar el <head>.
+	mux.HandleFunc("/about", func(w http.ResponseWriter, r *http.Request) {
+		renderizar(w, http.StatusOK, "about", datosPagina{Titulo: "Acerca de"})
+	})
+
+	// Browsers request /favicon.ico without looking at the <head>.
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
 	})
@@ -71,6 +75,6 @@ func main() {
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
-	log.Printf("Escuchando en %s", srv.Addr)
+	log.Printf("Listening on %s", srv.Addr)
 	log.Fatal(srv.ListenAndServe())
 }

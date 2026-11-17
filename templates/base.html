@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="color-scheme" content="dark">
     <title>{{ if .Titulo }}{{ .Titulo }} · {{ end }}webye</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/static/estilo.css">
@@ -12,24 +13,30 @@
 <body>
     <header class="cabecera">
         <div class="cabecera-interior">
-            <a class="marca" href="/">we<span>bye</span></a>
+            <a class="marca" href="/" aria-label="webye, portada"><span class="marca-we">we</span><span class="marca-bye">bye</span></a>
             {{ if not .Inicio }}
             <form class="buscador" action="/search/" method="get" role="search">
                 <input type="search" name="stext" value="{{ .Consulta }}" placeholder="Buscar en CeX" aria-label="Buscar en CeX" required>
                 <button type="submit">Buscar</button>
             </form>
             {{ end }}
+            <nav class="menu">
+                <a href="/about">Acerca de</a>
+            </nav>
         </div>
     </header>
+    <div class="cinta" aria-hidden="true"></div>
 
     <main class="contenido">
         {{ template "contenido" . }}
     </main>
 
+    <div class="cinta" aria-hidden="true"></div>
     <footer class="pie">
         <p>
             <a href="https://github.com/darlopvil/webye">Código fuente</a>
             · AGPL-3.0
+            · <a href="/about#aviso-legal">Aviso legal</a>
         </p>
         <p class="tenue">Instancia de uso privado. Proyecto independiente, sin relación con CeX.</p>
     </footer>

@@ -1,9 +1,9 @@
-# Binarios
+# Binaries
 /webye
 *.exe
 *.test
 *.out
 
-# Despliegue local (contiene datos de infraestructura y secretos)
+# Local deployment (contains infrastructure details and secrets)
 docker-compose.yml
 .env

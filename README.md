@@ -14,5 +14,10 @@ use. No public instance is offered. Issues are welcome.
 
 AGPL-3.0-or-later. See [LICENSE](LICENSE).
 
+The bundled fonts keep their own licenses, next to them in `static/fuentes/`:
+[Anton](https://github.com/googlefonts/AntonFont) (SIL Open Font License 1.1)
+and [Permanent Marker](https://fonts.google.com/specimen/Permanent+Marker)
+(Apache License 2.0).
+
 webye is an independent project and is not affiliated with, endorsed by or
 connected to CeX (Complete Entertainment Exchange).
