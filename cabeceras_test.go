@@ -29,6 +29,11 @@ func TestEveryRouteCarriesThePrivacyHeadersAndNoCookies(t *testing.T) {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, ruta, nil))
 		for k, v := range quiero {
+			// Static files and photos have their own caching, see
+			// estaticos_test.go; every other header applies to them too.
+			if k == "Cache-Control" && (strings.HasPrefix(ruta, "/static/") || strings.HasPrefix(ruta, "/img/")) {
+				continue
+			}
 			if got := w.Header().Get(k); got != v {
 				t.Errorf("%s: %s = %q, want %q", ruta, k, got, v)
 			}

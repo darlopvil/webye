@@ -24,11 +24,12 @@ type datosPagina struct {
 }
 
 var funciones = template.FuncMap{
-	"euros":   euros,
-	"miles":   miles,
-	"deref":   func(v *float64) float64 { return *v },
-	"decimal": decimal,
-	"foto":    foto,
+	"euros":    euros,
+	"miles":    miles,
+	"deref":    func(v *float64) float64 { return *v },
+	"decimal":  decimal,
+	"foto":     foto,
+	"estatico": estatico,
 }
 
 // Each page is parsed into its own set together with the base template,

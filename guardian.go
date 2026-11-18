@@ -95,6 +95,8 @@ type respuesta struct {
 	Estado int
 	Tipo   string
 	Cuerpo []byte
+	// Caduca is when webye's cached copy expires; zero when it is not kept.
+	Caduca time.Time
 }
 
 // guardian protects one upstream (Algolia, the wss2 API or the image host).
@@ -227,7 +229,8 @@ func (g *guardian) llamar(req *http.Request, clave string, ttl time.Duration) (r
 			ttl = maxAge(res.Header)
 		}
 		if ttl > 0 {
-			g.cache.guardar(clave, r, g.ahora().Add(ttl))
+			r.Caduca = g.ahora().Add(ttl)
+			g.cache.guardar(clave, r, r.Caduca)
 		}
 	}
 	return r, nil

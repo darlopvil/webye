@@ -101,7 +101,8 @@ func rutas() http.Handler {
 
 	mux.HandleFunc("/robots.txt", robots)
 
-	mux.Handle("/static/", http.FileServer(http.FS(estaticosFS)))
+	// Versioned static files, see estaticos.go.
+	mux.HandleFunc("/static/", paginaEstatico)
 
 	return cabeceras(mux)
 }

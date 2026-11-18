@@ -94,12 +94,14 @@ func imagen(w http.ResponseWriter, r *http.Request) {
 	case res.Estado >= 300 && res.Estado < 400:
 		// CeX has no photo for this product and redirects to its generic
 		// picture. webye shows its own placeholder instead of following.
+		cachearFoto(w, res.Caduca, imagenes.ahora())
 		sinFoto(w)
 		return
 	case res.Estado != http.StatusOK:
 		http.NotFound(w, r)
 		return
 	}
+	cachearFoto(w, res.Caduca, imagenes.ahora())
 	w.Header().Set("Content-Type", res.Tipo)
 	w.Header().Set("Content-Length", strconv.Itoa(len(res.Cuerpo)))
 	_, _ = w.Write(res.Cuerpo)
