@@ -289,7 +289,7 @@ func TestPrices(t *testing.T) {
 		}
 	}
 	f := leerFiltros(url.Values{"sellPrice": {":20"}})
-	if f.PrecioMin != "" || f.PrecioMax != "20" || f.parametros() != "&sellPrice=:20" {
+	if f.Precio.Min != "" || f.Precio.Max != "20" || f.parametros() != "&sellPrice=:20" {
 		t.Errorf("open minimum: %+v", f)
 	}
 }

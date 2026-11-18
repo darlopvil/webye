@@ -20,6 +20,14 @@ import (
 //	sellPrice=10:20          numericFilters ["sellPrice>=10","sellPrice<=20"];
 //	                         "15:" and ":20" are open ranges
 //	availability=allStock    also shows sold-out products
+//
+// Three more, which the website does not have, use the names of their
+// Algolia fields and the same range shape:
+//
+//	cashPriceCalculated=50:  what CeX pays in cash, as a range
+//	discontinued=1           only products CeX no longer buys (measured:
+//	                         none of them pays anything, in cash or voucher)
+//	storeOnly=1              only products not sold online
 
 const (
 	atributoTiendas   = "stores"
@@ -32,10 +40,18 @@ const (
 	// one more count query, so any group beyond this is ignored.
 	maxGrupos = 13
 
-	// The form sends the price as two fields; the handler turns them into
-	// the website's sellPrice=min:max.
-	campoPrecioMin = "precioMin"
-	campoPrecioMax = "precioMax"
+	// The form sends each range as two fields; the handler turns them
+	// into the min:max shape.
+	campoPrecioMin   = "precioMin"
+	campoPrecioMax   = "precioMax"
+	campoEfectivoMin = "efectivoMin"
+	campoEfectivoMax = "efectivoMax"
+
+	// "Not sold online" is what the availability field says, not the
+	// quantities: a product can have online stock and still not be sold
+	// online.
+	disponibleTienda = "Disponible en tienda"
+	disponibleOnline = "Disponible online"
 )
 
 // The website shows its product attributes with their own Spanish names,
@@ -54,24 +70,30 @@ type grupoFiltro struct {
 }
 
 type filtros struct {
-	Agotados  bool
-	PrecioMin string // a plain number, or "" for no limit
-	PrecioMax string
-	Grupos    []grupoFiltro // in canonical order, see ordenNatural
+	Agotados       bool
+	SoloTienda     bool
+	Descatalogados bool
+	Precio         rango
+	Efectivo       rango
+	Grupos         []grupoFiltro // in canonical order, see ordenNatural
 }
 
-func (f filtros) activos() bool {
-	return f.Agotados || f.PrecioMin != "" || f.PrecioMax != "" || len(f.Grupos) > 0
+// rango is a min:max range of euros; either end can be open.
+type rango struct {
+	Min, Max string // plain numbers, or "" for no limit
 }
+
+func (r rango) usado() bool { return r.Min != "" || r.Max != "" }
+
+func (f filtros) activos() bool { return f.cuantos() > 0 }
 
 // cuantos is how many filters are in use, for the panel title.
 func (f filtros) cuantos() int {
 	n := len(f.Grupos)
-	if f.Agotados {
-		n++
-	}
-	if f.PrecioMin != "" || f.PrecioMax != "" {
-		n++
+	for _, usado := range []bool{f.Agotados, f.SoloTienda, f.Descatalogados, f.Precio.usado(), f.Efectivo.usado()} {
+		if usado {
+			n++
+		}
 	}
 	return n
 }
@@ -89,20 +111,12 @@ func (f filtros) marcados(atributo string) []string {
 // as sent by webye's form (repeated parameters and two price fields).
 // Anything that is not a filter the website offers is ignored.
 func leerFiltros(q url.Values) filtros {
-	var f filtros
-	f.Agotados = q.Get("availability") == "allStock"
-
-	minimo, maximo, _ := strings.Cut(q.Get("sellPrice"), ":")
-	if q.Has(campoPrecioMin) || q.Has(campoPrecioMax) {
-		minimo, maximo = q.Get(campoPrecioMin), q.Get(campoPrecioMax)
-	}
-	f.PrecioMin, f.PrecioMax = leerPrecio(minimo), leerPrecio(maximo)
-	if f.PrecioMin != "" && f.PrecioMax != "" {
-		a, _ := strconv.ParseFloat(f.PrecioMin, 64)
-		b, _ := strconv.ParseFloat(f.PrecioMax, 64)
-		if a > b {
-			f.PrecioMin, f.PrecioMax = f.PrecioMax, f.PrecioMin
-		}
+	f := filtros{
+		Agotados:       q.Get("availability") == "allStock",
+		SoloTienda:     q.Get("storeOnly") == "1",
+		Descatalogados: q.Get("discontinued") == "1",
+		Precio:         leerRango(q, "sellPrice", campoPrecioMin, campoPrecioMax),
+		Efectivo:       leerRango(q, "cashPriceCalculated", campoEfectivoMin, campoEfectivoMax),
 	}
 
 	var atributos []string
@@ -138,6 +152,41 @@ func leerFiltros(q url.Values) filtros {
 	return f
 }
 
+// leerRango reads a range as min:max, or as the form's two fields.
+func leerRango(q url.Values, parametro, campoMin, campoMax string) rango {
+	minimo, maximo, _ := strings.Cut(q.Get(parametro), ":")
+	if q.Has(campoMin) || q.Has(campoMax) {
+		minimo, maximo = q.Get(campoMin), q.Get(campoMax)
+	}
+	r := rango{Min: leerPrecio(minimo), Max: leerPrecio(maximo)}
+	if r.Min != "" && r.Max != "" {
+		a, _ := strconv.ParseFloat(r.Min, 64)
+		b, _ := strconv.ParseFloat(r.Max, 64)
+		if a > b {
+			r.Min, r.Max = r.Max, r.Min
+		}
+	}
+	return r
+}
+
+func (r rango) parametro(nombre string) string {
+	if !r.usado() {
+		return ""
+	}
+	return "&" + nombre + "=" + r.Min + ":" + r.Max
+}
+
+func (r rango) numericos(campo string) []string {
+	var n []string
+	if r.Min != "" {
+		n = append(n, campo+">="+r.Min)
+	}
+	if r.Max != "" {
+		n = append(n, campo+"<="+r.Max)
+	}
+	return n
+}
+
 // leerPrecio accepts "15", "9.5" and "9,5"; anything else, or a price that
 // could not narrow the search, means no limit.
 func leerPrecio(s string) string {
@@ -152,8 +201,10 @@ func leerPrecio(s string) string {
 // desdeFormulario tells a submission of webye's form, which is redirected
 // to the website's URL shape, from a link already in that shape.
 func desdeFormulario(q url.Values) bool {
-	if q.Has(campoPrecioMin) || q.Has(campoPrecioMax) {
-		return true
+	for _, campo := range []string{campoPrecioMin, campoPrecioMax, campoEfectivoMin, campoEfectivoMax} {
+		if q.Has(campo) {
+			return true
+		}
 	}
 	for a, v := range q {
 		if esFiltrable(a) && len(v) > 1 {
@@ -170,8 +221,13 @@ func (f filtros) parametros() string {
 	if f.Agotados {
 		b.WriteString("&availability=allStock")
 	}
-	if f.PrecioMin != "" || f.PrecioMax != "" {
-		b.WriteString("&sellPrice=" + f.PrecioMin + ":" + f.PrecioMax)
+	b.WriteString(f.Precio.parametro("sellPrice"))
+	b.WriteString(f.Efectivo.parametro("cashPriceCalculated"))
+	if f.Descatalogados {
+		b.WriteString("&discontinued=1")
+	}
+	if f.SoloTienda {
+		b.WriteString("&storeOnly=1")
 	}
 	for _, g := range f.Grupos {
 		valores := make([]string, len(g.Valores))
@@ -184,7 +240,8 @@ func (f filtros) parametros() string {
 }
 
 // facetFilters returns the list filters for Algolia, leaving out the list
-// named sin, for its own count query.
+// named sin, for its own count query. "Store only" is not a list, so it
+// goes in every query.
 func (f filtros) facetFilters(sin string) [][]string {
 	var grupos [][]string
 	for _, g := range f.Grupos {
@@ -197,16 +254,16 @@ func (f filtros) facetFilters(sin string) [][]string {
 		}
 		grupos = append(grupos, grupo)
 	}
+	if f.SoloTienda {
+		grupos = append(grupos, []string{"availability:" + disponibleTienda}, []string{"availability:-" + disponibleOnline})
+	}
 	return grupos
 }
 
 func (f filtros) numericos() []string {
-	var n []string
-	if f.PrecioMin != "" {
-		n = append(n, "sellPrice>="+f.PrecioMin)
-	}
-	if f.PrecioMax != "" {
-		n = append(n, "sellPrice<="+f.PrecioMax)
+	n := append(f.Precio.numericos("sellPrice"), f.Efectivo.numericos("cashPriceCalculated")...)
+	if f.Descatalogados {
+		n = append(n, "discontinued=1")
 	}
 	return n
 }
@@ -227,14 +284,12 @@ type grupoVista struct {
 }
 
 type vistaFiltros struct {
-	Consulta  string
-	Orden     string
-	Activos   int
-	Agotados  bool
-	PrecioMin string
-	PrecioMax string
-	Grupos    []grupoVista
-	Quitar    string // the same search without filters
+	Consulta string
+	Orden    string
+	Activos  int
+	filtros
+	Grupos []grupoVista // shadows filtros.Grupos: the lists as shown
+	Quitar string       // the same search without filters
 }
 
 // etiquetas are the website's titles for the lists that are not product
@@ -249,13 +304,11 @@ var etiquetas = map[string]string{
 // when no product is left with them, so they can be unticked.
 func vistaDeFiltros(consulta, orden string, f filtros, facetas map[string]map[string]int) *vistaFiltros {
 	v := &vistaFiltros{
-		Consulta:  consulta,
-		Orden:     orden,
-		Activos:   f.cuantos(),
-		Agotados:  f.Agotados,
-		PrecioMin: f.PrecioMin,
-		PrecioMax: f.PrecioMax,
-		Quitar:    enlaceBusqueda(consulta, orden, filtros{}, 1),
+		Consulta: consulta,
+		Orden:    orden,
+		Activos:  f.cuantos(),
+		filtros:  f,
+		Quitar:   enlaceBusqueda(consulta, orden, filtros{}, 1),
 	}
 	var atributos []string
 	for a := range facetas {

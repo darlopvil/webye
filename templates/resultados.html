@@ -19,13 +19,23 @@
                 <fieldset class="grupo-filtro">
                     <legend>Por disponibilidad</legend>
                     <label class="opcion-filtro"><input type="checkbox" name="availability" value="allStock"{{ if .Agotados }} checked{{ end }}> Mostrar productos agotados</label>
+                    <label class="opcion-filtro"><input type="checkbox" name="storeOnly" value="1"{{ if .SoloTienda }} checked{{ end }}> Solo en tienda (no se vende online)</label>
+                    <label class="opcion-filtro"><input type="checkbox" name="discontinued" value="1"{{ if .Descatalogados }} checked{{ end }}> Solo descatalogados (CeX ya no los compra)</label>
                 </fieldset>
                 <fieldset class="grupo-filtro">
                     <legend>Por precios</legend>
                     <div class="filtro-precio">
-                        <input type="number" name="precioMin" value="{{ .PrecioMin }}" min="0" step="any" inputmode="decimal" placeholder="mín." aria-label="Precio mínimo">
+                        <input type="number" name="precioMin" value="{{ .Precio.Min }}" min="0" step="any" inputmode="decimal" placeholder="mín." aria-label="Precio mínimo">
                         <span>hasta</span>
-                        <input type="number" name="precioMax" value="{{ .PrecioMax }}" min="0" step="any" inputmode="decimal" placeholder="máx." aria-label="Precio máximo">
+                        <input type="number" name="precioMax" value="{{ .Precio.Max }}" min="0" step="any" inputmode="decimal" placeholder="máx." aria-label="Precio máximo">
+                    </div>
+                </fieldset>
+                <fieldset class="grupo-filtro">
+                    <legend>Te dan en efectivo</legend>
+                    <div class="filtro-precio">
+                        <input type="number" name="efectivoMin" value="{{ .Efectivo.Min }}" min="0" step="any" inputmode="decimal" placeholder="mín." aria-label="Efectivo mínimo">
+                        <span>hasta</span>
+                        <input type="number" name="efectivoMax" value="{{ .Efectivo.Max }}" min="0" step="any" inputmode="decimal" placeholder="máx." aria-label="Efectivo máximo">
                     </div>
                 </fieldset>
                 {{ range .Grupos }}

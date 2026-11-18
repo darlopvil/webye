@@ -23,6 +23,9 @@ use. No public instance is offered. Issues are welcome.
 - Filter with the same lists as the CeX website: stores, category, price,
   sold-out products and every product attribute it shows (PEGI rating,
   grade, condition…). Filtered CeX links work as they are.
+- Three filters the CeX website does not have: products sold only in
+  stores, discontinued products (the ones CeX no longer buys) and a range
+  for the cash CeX pays.
 - Product pages with specifications, description, rating and online or
   in-store stock.
 - Price data the CeX website does not show: the previous price, the launch
