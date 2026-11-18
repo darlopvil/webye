@@ -47,7 +47,9 @@
   }
 
   function cerrarPanel(e) {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
     if (window.history.state && window.history.state.tiendas) {
       // Opened by this script: going back closes it and keeps history clean.
       window.history.back();
@@ -66,6 +68,15 @@
     abrir();
   });
   cerrar.addEventListener("click", cerrarPanel);
+  // A left click on the page, outside the panel, closes it too. Links and
+  // form fields keep doing their own thing.
+  document.addEventListener("click", function (e) {
+    if (panel.hidden || e.button !== 0 || panel.contains(e.target) ||
+        e.target.closest("a, button, input, select, textarea, label, summary")) {
+      return;
+    }
+    cerrarPanel();
+  });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && !panel.hidden) {
       cerrarPanel(e);
