@@ -40,7 +40,7 @@ func TestSearchRequestIsSlimAndAnonymous(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.Write([]byte(respuestaAlgolia))
 	})
-	res, err := buscar(context.Background(), "  Tomb   RAIDER ", 0, "")
+	res, err := buscar(context.Background(), peticionBusqueda{Consulta: "  Tomb   RAIDER ", Pagina: 0})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,10 +57,12 @@ func TestSearchRequestIsSlimAndAnonymous(t *testing.T) {
 			t.Errorf("%s = %v, want %v", k, p[k], v)
 		}
 	}
-	for _, k := range []string{"facets", "attributesToHighlight"} {
-		if l, ok := p[k].([]any); !ok || len(l) != 0 {
-			t.Errorf("%s should be an empty list, got %v", k, p[k])
-		}
+	if l, ok := p["attributesToHighlight"].([]any); !ok || len(l) != 0 {
+		t.Errorf("attributesToHighlight should be an empty list, got %v", p["attributesToHighlight"])
+	}
+	// The filter lists come with the results, as on the website.
+	if l, ok := p["facets"].([]any); !ok || len(l) != 1 || l[0] != "*" {
+		t.Errorf("facets should be [*], got %v", p["facets"])
 	}
 	if _, ok := p["userToken"]; ok {
 		t.Error("userToken must never be sent")
@@ -83,11 +85,11 @@ func TestSameSearchDifferentSpellingIsOneRequest(t *testing.T) {
 		w.Write([]byte(respuestaAlgolia))
 	})
 	for _, q := range []string{"PS5", " ps5 ", "ps5"} {
-		if _, err := buscar(context.Background(), q, 0, ""); err != nil {
+		if _, err := buscar(context.Background(), peticionBusqueda{Consulta: q, Pagina: 0}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	buscar(context.Background(), "ps5", 1, "")
+	buscar(context.Background(), peticionBusqueda{Consulta: "ps5", Pagina: 1})
 	if n.Load() != 2 {
 		t.Fatalf("3 spellings of one search plus page 2 made %d requests, want 2", n.Load())
 	}
@@ -95,7 +97,7 @@ func TestSameSearchDifferentSpellingIsOneRequest(t *testing.T) {
 
 func TestEmptySearchMakesNoRequest(t *testing.T) {
 	n := algoliaDePrueba(t, func(w http.ResponseWriter, r *http.Request) {})
-	if res, err := buscar(context.Background(), "   ", 0, ""); err != nil || res.Total != 0 {
+	if res, err := buscar(context.Background(), peticionBusqueda{Consulta: "   ", Pagina: 0}); err != nil || res.Total != 0 {
 		t.Fatalf("empty search: %+v, %v", res, err)
 	}
 	if n.Load() != 0 {
@@ -109,7 +111,7 @@ func TestBlockIsReported(t *testing.T) {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("<title>Attention Required! | Cloudflare</title>"))
 	})
-	if _, err := buscar(context.Background(), "ps5", 0, ""); !errors.Is(err, errBloqueo) {
+	if _, err := buscar(context.Background(), peticionBusqueda{Consulta: "ps5", Pagina: 0}); !errors.Is(err, errBloqueo) {
 		t.Fatalf("Cloudflare's HTML 403 should be a block, got %v", err)
 	}
 }

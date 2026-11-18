@@ -18,6 +18,9 @@ use. No public instance is offered. Issues are welcome.
   store credit.
 - Sort results with the same options as the CeX website: relevance,
   popularity, price, name or rating.
+- Filter with the same lists as the CeX website: stores, category, price,
+  sold-out products and every product attribute it shows (PEGI rating,
+  grade, condition…). Filtered CeX links work as they are.
 - Product pages with specifications, description, rating and online or
   in-store stock.
 - Price data the CeX website does not show: the previous price, the launch
@@ -33,7 +36,7 @@ use. No public instance is offered. Issues are welcome.
   analytics.
 - Nothing is stored: no database and no files, only an in-memory cache that
   lasts as long as CeX allows itself on its own website.
-- Lightweight: a results page asks CeX for about 115 KB, against the 539 KB
+- Lightweight: a results page asks CeX for about 124 KB, against the 539 KB
   its website requests.
 - Polite to CeX: repeated requests are collapsed, each visitor is rate
   limited, and webye stops calling on its own when CeX pushes back.

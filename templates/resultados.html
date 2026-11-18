@@ -2,11 +2,50 @@
 {{ with .Busqueda }}
 <section class="resultados">
     <p class="resumen">
-        {{ if .SinResults }}Nada en stock para «{{ $.Consulta }}».
+        {{ if .SinResults }}{{ if .ConFiltros }}Nada con estos filtros para «{{ $.Consulta }}».{{ else }}Nada en stock para «{{ $.Consulta }}».{{ end }}
         {{ else }}<strong>{{ miles .Total }}</strong> {{ if eq .Total 1 }}resultado{{ else }}resultados{{ end }} para «{{ $.Consulta }}»{{ end }}
     </p>
     {{ if .Recortado }}
     <p class="aviso-corto">CeX solo deja recorrer los primeros 1.000. Afina la búsqueda para llegar al resto.</p>
+    {{ end }}
+
+    {{ with .Filtros }}
+    <details class="filtros"{{ if .Activos }} open{{ end }}>
+        <summary>Filtros{{ if .Activos }} <span class="filtros-activos">{{ .Activos }}</span>{{ end }}</summary>
+        <form class="filtros-formulario" action="/search/" method="get">
+            <input type="hidden" name="stext" value="{{ .Consulta }}">
+            {{ with .Orden }}<input type="hidden" name="sort" value="{{ . }}">{{ end }}
+            <div class="filtros-grupos">
+                <fieldset class="grupo-filtro">
+                    <legend>Por disponibilidad</legend>
+                    <label class="opcion-filtro"><input type="checkbox" name="availability" value="allStock"{{ if .Agotados }} checked{{ end }}> Mostrar productos agotados</label>
+                </fieldset>
+                <fieldset class="grupo-filtro">
+                    <legend>Por precios</legend>
+                    <div class="filtro-precio">
+                        <input type="number" name="precioMin" value="{{ .PrecioMin }}" min="0" step="any" inputmode="decimal" placeholder="mín." aria-label="Precio mínimo">
+                        <span>hasta</span>
+                        <input type="number" name="precioMax" value="{{ .PrecioMax }}" min="0" step="any" inputmode="decimal" placeholder="máx." aria-label="Precio máximo">
+                    </div>
+                </fieldset>
+                {{ range .Grupos }}
+                {{ $atributo := .Atributo }}
+                <details class="grupo-filtro"{{ if .Marcados }} open{{ end }}>
+                    <summary>{{ .Etiqueta }}{{ if .Marcados }} <span class="filtros-activos">{{ .Marcados }}</span>{{ end }}</summary>
+                    <ul class="opciones-filtro">
+                        {{ range .Opciones }}
+                        <li><label class="opcion-filtro"><input type="checkbox" name="{{ $atributo }}" value="{{ .Valor }}"{{ if .Marcado }} checked{{ end }}> <span>{{ .Valor }} <span class="tenue">({{ miles .Cuenta }})</span></span></label></li>
+                        {{ end }}
+                    </ul>
+                </details>
+                {{ end }}
+            </div>
+            <p class="filtros-acciones">
+                <button type="submit">Filtrar</button>
+                {{ if .Activos }}<a href="{{ .Quitar }}">Quitar filtros</a>{{ end }}
+            </p>
+        </form>
+    </details>
     {{ end }}
 
     {{ if not .SinResults }}
@@ -35,6 +74,7 @@
             <p class="tarjeta-stock">
                 {{ if gt .Online 0 }}<span class="sello">Online</span>{{ end }}
                 {{ if gt .Tienda 0 }}<span class="sello">En tienda</span>{{ end }}
+                {{ if and (eq .Online 0) (eq .Tienda 0) }}<span class="sello sello-agotado">Agotado</span>{{ end }}
             </p>
         </li>
         {{ end }}

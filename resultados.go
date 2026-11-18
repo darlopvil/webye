@@ -21,6 +21,8 @@ type vistaBusqueda struct {
 	Anterior   string
 	Siguiente  string
 	Ordenes    []enlaceOrden
+	Filtros    *vistaFiltros
+	ConFiltros bool
 	SinResults bool
 }
 
@@ -36,23 +38,41 @@ type enlacePagina struct {
 	Actual bool
 }
 
-// paginaBusqueda serves /search/?stext=…&page=N, the same parameters as CeX,
-// plus sort=…, which CeX keeps out of its URLs. Without it the order is
-// relevance, so a CeX link still gives what CeX gives.
+// paginaBusqueda serves /search/?stext=…&page=N with the website's own
+// filter parameters (see filtros.go), plus sort=…, which CeX keeps out of
+// its URLs. Without it the order is relevance, so a CeX link still gives
+// what CeX gives.
 func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
-	consulta := normalizar(r.URL.Query().Get("stext"))
+	q := r.URL.Query()
+	consulta := normalizar(q.Get("stext"))
 	if consulta == "" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	pagina, err := strconv.Atoi(r.URL.Query().Get("page"))
+	pagina, err := strconv.Atoi(q.Get("page"))
 	if err != nil || pagina < 1 {
 		pagina = 1
 	}
+	orden := ordenValido(q.Get("sort"))
+	f := leerFiltros(q)
 
-	orden := ordenValido(r.URL.Query().Get("sort"))
+	// The filter form sends repeated parameters and two price fields.
+	// Its result goes to the website's URL shape, which is the one to
+	// keep or share, without asking CeX anything.
+	if desdeFormulario(q) {
+		http.Redirect(w, r, enlaceBusqueda(consulta, orden, f, 1), http.StatusSeeOther)
+		return
+	}
 
-	res, err := buscar(r.Context(), consulta, pagina-1, orden)
+	res, err := buscar(r.Context(), peticionBusqueda{Consulta: consulta, Pagina: pagina - 1, Orden: orden, Filtros: f})
+	if errors.Is(err, errFiltroInvalido) {
+		renderizar(w, http.StatusBadRequest, "error", datosPagina{
+			Titulo:   "Filtros no válidos",
+			Consulta: consulta,
+			Mensaje:  "CeX no entiende esos filtros. Quítalos y vuelve a probar.",
+		})
+		return
+	}
 	if err != nil {
 		errorCeX(w, consulta, err)
 		return
@@ -63,14 +83,19 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 		Recortado:  res.Total > limiteAlgolia,
 		Productos:  res.Productos,
 		Pagina:     pagina,
+		ConFiltros: f.activos(),
 		SinResults: len(res.Productos) == 0,
 	}
-	// Changing the order goes back to the first page.
-	for _, o := range opcionesOrden {
-		v.Ordenes = append(v.Ordenes, enlaceOrden{Etiqueta: o.Etiqueta, URL: enlaceBusqueda(consulta, o.Valor, 1), Actual: o.Valor == orden})
+	// With no results and no filters there is nothing to narrow down.
+	if !v.SinResults || v.ConFiltros {
+		v.Filtros = vistaDeFiltros(consulta, orden, f, res.Facetas)
 	}
-	// The pages keep the order.
-	enlace := func(n int) string { return enlaceBusqueda(consulta, orden, n) }
+	// Changing the order keeps the filters and goes back to the first page.
+	for _, o := range opcionesOrden {
+		v.Ordenes = append(v.Ordenes, enlaceOrden{Etiqueta: o.Etiqueta, URL: enlaceBusqueda(consulta, o.Valor, f, 1), Actual: o.Valor == orden})
+	}
+	// The pages keep the order and the filters.
+	enlace := func(n int) string { return enlaceBusqueda(consulta, orden, f, n) }
 	if res.Paginas > 1 {
 		for n := 1; n <= res.Paginas; n++ {
 			v.Paginas = append(v.Paginas, enlacePagina{Numero: n, URL: enlace(n), Actual: n == pagina})
@@ -90,12 +115,14 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 }
 
 // enlaceBusqueda builds a results link with the shape of CeX's own
-// (/search/?stext=tomb+raider&page=2), plus sort when it is not relevance.
-func enlaceBusqueda(consulta, orden string, pagina int) string {
+// (/search/?stext=tomb+raider&stores=…&page=2), plus sort when it is not
+// relevance.
+func enlaceBusqueda(consulta, orden string, f filtros, pagina int) string {
 	u := "/search/?stext=" + url.QueryEscape(consulta)
 	if orden != "" {
 		u += "&sort=" + url.QueryEscape(orden)
 	}
+	u += f.parametros()
 	if pagina > 1 {
 		u += "&page=" + strconv.Itoa(pagina)
 	}
