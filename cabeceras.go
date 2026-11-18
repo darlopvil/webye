@@ -2,11 +2,23 @@ package main
 
 import "net/http"
 
+// politicaContenido only lets pages use what this same server sends: its
+// stylesheet, fonts and images. No scripts at all, no third parties, no
+// framing and forms that can only submit here.
+const politicaContenido = "default-src 'none'; style-src 'self'; img-src 'self'; font-src 'self'; " +
+	"form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+
 // cabeceras adds the headers every response carries.
 func cabeceras(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := w.Header()
 		// This is a private instance: search engines must not index it.
-		w.Header().Set("X-Robots-Tag", "noindex, nofollow")
+		c.Set("X-Robots-Tag", "noindex, nofollow")
+		// webye keeps nothing, and that includes the visitor's browser cache.
+		c.Set("Cache-Control", "no-store")
+		c.Set("Content-Security-Policy", politicaContenido)
+		c.Set("Referrer-Policy", "no-referrer")
+		c.Set("X-Content-Type-Options", "nosniff")
 		h.ServeHTTP(w, r)
 	})
 }
