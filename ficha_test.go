@@ -123,3 +123,19 @@ func TestProductDetailsAreCached(t *testing.T) {
 		t.Fatalf("3 views of one product made %d requests, want 1", n.Load())
 	}
 }
+
+func TestTheProductPageSaysWhetherItIsSoldOnline(t *testing.T) {
+	limitePaginas = nuevoLimitador(rafagaPaginas, ritmoPaginas)
+	casos := map[string]bool{
+		// A real case: 26 units of online stock, but only sold in stores.
+		`"ecomQuantityOnHand":26,"inStockOnline":0`: false,
+		`"ecomQuantityOnHand":50,"inStockOnline":1`: true,
+	}
+	for campos, online := range casos {
+		wss2DePrueba(t, jsonDe(strings.Replace(fichaIphone, `"ecomQuantityOnHand":0`, campos, 1)))
+		html := pedirRuta(t, "/product-detail/?id=SAPPIP17P256GNCLIBA").Body.String()
+		if strings.Contains(html, "En stock online") != online {
+			t.Errorf("%s: shows En stock online = %v, want %v", campos, !online, online)
+		}
+	}
+}

@@ -28,7 +28,7 @@ func algoliaDePrueba(t *testing.T, h http.HandlerFunc) *atomic.Int32 {
 	return &llamadas
 }
 
-const respuestaAlgolia = `{"results":[{"nbHits":86,"nbPages":1,"page":0,"hits":[{"boxId":"5021290074811","boxName":"Rise of the Tomb Raider","categoryFriendlyName":"PS4 Juegos","sellPrice":15,"cashPriceCalculated":6,"exchangePriceCalculated":9,"imageUrls":{"small":"https://es.static.webuy.com/product_images/Juegos/PS4 Juegos/5021290074811_s.jpg","medium":"m","large":"l"},"ecomQuantity":50,"collectionQuantity":50,"objectID":"5021290074811"}]}]}`
+const respuestaAlgolia = `{"results":[{"nbHits":86,"nbPages":1,"page":0,"hits":[{"boxId":"5021290074811","boxName":"Rise of the Tomb Raider","categoryFriendlyName":"PS4 Juegos","sellPrice":15,"cashPriceCalculated":6,"exchangePriceCalculated":9,"imageUrls":{"small":"https://es.static.webuy.com/product_images/Juegos/PS4 Juegos/5021290074811_s.jpg","medium":"m","large":"l"},"inStockOnline":1,"inStockStore":1,"objectID":"5021290074811"}]}]}`
 
 func TestSearchRequestIsSlimAndAnonymous(t *testing.T) {
 	var cuerpo map[string][]map[string]any
@@ -74,7 +74,7 @@ func TestSearchRequestIsSlimAndAnonymous(t *testing.T) {
 		t.Fatalf("parsed %+v", res)
 	}
 	pr := res.Productos[0]
-	if pr.ID != "5021290074811" || pr.Venta != 15 || pr.Efectivo != 6 || pr.Vale != 9 || pr.Online != 50 || pr.Imagenes.Mediana != "m" {
+	if pr.ID != "5021290074811" || pr.Venta != 15 || pr.Efectivo != 6 || pr.Vale != 9 || pr.Online != 1 || pr.Imagenes.Mediana != "m" {
 		t.Fatalf("parsed product %+v", pr)
 	}
 }

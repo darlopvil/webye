@@ -41,7 +41,7 @@ type ficha struct {
 	PrecioAnterior *float64 `json:"previousPrice"`
 	CambioPrecio   string   `json:"lastPriceUpdatedDate"`
 	Valoracion     *float64 `json:"boxRating"`
-	Online         int      `json:"ecomQuantityOnHand"`
+	Online         int      `json:"inStockOnline"` // not ecomQuantityOnHand, see busqueda.go
 	Tienda         int      `json:"collectionQuantity"`
 	Imagenes       struct {
 		Pequena string `json:"small"`

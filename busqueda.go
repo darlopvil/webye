@@ -46,7 +46,7 @@ var baseAlgolia = "https://search.webuy.io"
 var camposBusqueda = []string{
 	"boxId", "boxName", "categoryFriendlyName",
 	"sellPrice", "cashPriceCalculated", "exchangePriceCalculated",
-	"imageUrls", "ecomQuantity", "collectionQuantity",
+	"imageUrls", "inStockOnline", "inStockStore",
 }
 
 type producto struct {
@@ -61,8 +61,12 @@ type producto struct {
 		Mediana string `json:"medium"`
 		Grande  string `json:"large"`
 	} `json:"imageUrls"`
-	Online int `json:"ecomQuantity"`
-	Tienda int `json:"collectionQuantity"`
+	// Whether it can be bought online and in a store. Not the quantities:
+	// a product can have online stock and still not be sold online.
+	// Measured on the whole catalogue, inStockOnline and inStockStore say
+	// exactly what the availability field says, in one digit each.
+	Online int `json:"inStockOnline"`
+	Tienda int `json:"inStockStore"`
 }
 
 type resultadoBusqueda struct {

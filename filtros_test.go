@@ -240,7 +240,7 @@ func TestNoPanelForAnEmptySearchWithoutFilters(t *testing.T) {
 
 func TestSoldOutProductsAreMarked(t *testing.T) {
 	limitePaginas = nuevoLimitador(rafagaPaginas, ritmoPaginas)
-	algoliaDePrueba(t, jsonDe(`{"results":[{"nbHits":1,"nbPages":1,"page":0,"hits":[{"boxId":"X","boxName":"Juego","sellPrice":3,"ecomQuantity":0,"collectionQuantity":0}]}]}`))
+	algoliaDePrueba(t, jsonDe(`{"results":[{"nbHits":1,"nbPages":1,"page":0,"hits":[{"boxId":"X","boxName":"Juego","sellPrice":3,"inStockOnline":0,"inStockStore":0}]}]}`))
 	if html := pedirRuta(t, "/search/?stext=juego&availability=allStock").Body.String(); !strings.Contains(html, `<span class="sello sello-agotado">Agotado</span>`) {
 		t.Error("sold-out product not marked")
 	}

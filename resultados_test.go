@@ -19,7 +19,7 @@ func pedirRuta(t *testing.T, ruta string) *httptest.ResponseRecorder {
 }
 
 func respuestaPaginada(total, paginas, pagina int) string {
-	return fmt.Sprintf(`{"results":[{"nbHits":%d,"nbPages":%d,"page":%d,"hits":[{"boxId":"5021290074811","boxName":"Rise of the Tomb Raider","categoryFriendlyName":"PS4 Juegos","sellPrice":1100,"cashPriceCalculated":6,"exchangePriceCalculated":9.5,"imageUrls":{"small":"s","medium":"m","large":"l"},"ecomQuantity":50,"collectionQuantity":0}]}]}`, total, paginas, pagina)
+	return fmt.Sprintf(`{"results":[{"nbHits":%d,"nbPages":%d,"page":%d,"hits":[{"boxId":"5021290074811","boxName":"Rise of the Tomb Raider","categoryFriendlyName":"PS4 Juegos","sellPrice":1100,"cashPriceCalculated":6,"exchangePriceCalculated":9.5,"imageUrls":{"small":"s","medium":"m","large":"l"},"inStockOnline":1,"inStockStore":0}]}]}`, total, paginas, pagina)
 }
 
 func TestResultsPageShowsProductsAndPrices(t *testing.T) {
@@ -45,7 +45,7 @@ func TestResultsPageShowsProductsAndPrices(t *testing.T) {
 			}
 		}
 		if strings.Contains(html, "En tienda") {
-			t.Errorf("%s: shows in-store stock with collectionQuantity 0", ruta)
+			t.Errorf("%s: shows in-store stock with inStockStore 0", ruta)
 		}
 		if strings.Contains(html, "paginacion") {
 			t.Errorf("%s: a single page needs no pagination", ruta)
@@ -131,5 +131,15 @@ func TestSpanishNumbers(t *testing.T) {
 	}
 	if miles(1182) != "1.182" || miles(999) != "999" || miles(1000) != "1.000" {
 		t.Error("miles")
+	}
+}
+
+func TestCardsSayWhereAProductIsSoldNotWhereItHasStock(t *testing.T) {
+	limitePaginas = nuevoLimitador(rafagaPaginas, ritmoPaginas)
+	// A real case: online stock, but only sold in stores.
+	algoliaDePrueba(t, jsonDe(`{"results":[{"nbHits":1,"nbPages":1,"page":0,"hits":[{"boxId":"X","boxName":"Monitor","sellPrice":45,"ecomQuantity":11,"collectionQuantity":11,"inStockOnline":0,"inStockStore":1}]}]}`))
+	html := pedirRuta(t, "/search/?stext=monitor").Body.String()
+	if strings.Contains(html, `class="sello">Online`) || !strings.Contains(html, `class="sello">En tienda`) {
+		t.Fatal("the card should say En tienda and not Online")
 	}
 }
