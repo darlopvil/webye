@@ -9,6 +9,16 @@
     <p class="aviso-corto">CeX solo deja recorrer los primeros 1.000. Afina la búsqueda para llegar al resto.</p>
     {{ end }}
 
+    {{ if not .SinResults }}
+    <nav class="ordenes" aria-label="Ordenar">
+        <span class="ordenes-titulo">Ordenar por:</span>
+        {{ range .Ordenes }}
+            {{ if .Actual }}<span class="actual" aria-current="true">{{ .Etiqueta }}</span>
+            {{ else }}<a href="{{ .URL }}">{{ .Etiqueta }}</a>{{ end }}
+        {{ end }}
+    </nav>
+    {{ end }}
+
     <ul class="rejilla">
         {{ range .Productos }}
         <li class="tarjeta">

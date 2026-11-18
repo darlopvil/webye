@@ -16,6 +16,8 @@ use. No public instance is offered. Issues are welcome.
   sale and in stock), 170 results per page.
 - Every result shows its price and what CeX pays for it, in cash or in
   store credit.
+- Sort results with the same options as the CeX website: relevance,
+  popularity, price, name or rating.
 - Product pages with specifications, description, rating and online or
   in-store stock.
 - Price data the CeX website does not show: the previous price, the launch

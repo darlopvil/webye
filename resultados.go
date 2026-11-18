@@ -20,7 +20,14 @@ type vistaBusqueda struct {
 	Paginas    []enlacePagina
 	Anterior   string
 	Siguiente  string
+	Ordenes    []enlaceOrden
 	SinResults bool
+}
+
+type enlaceOrden struct {
+	Etiqueta string
+	URL      string
+	Actual   bool
 }
 
 type enlacePagina struct {
@@ -29,7 +36,9 @@ type enlacePagina struct {
 	Actual bool
 }
 
-// paginaBusqueda serves /search/?stext=…&page=N, the same parameters as CeX.
+// paginaBusqueda serves /search/?stext=…&page=N, the same parameters as CeX,
+// plus sort=…, which CeX keeps out of its URLs. Without it the order is
+// relevance, so a CeX link still gives what CeX gives.
 func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 	consulta := normalizar(r.URL.Query().Get("stext"))
 	if consulta == "" {
@@ -41,7 +50,9 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 		pagina = 1
 	}
 
-	res, err := buscar(r.Context(), consulta, pagina-1)
+	orden := ordenValido(r.URL.Query().Get("sort"))
+
+	res, err := buscar(r.Context(), consulta, pagina-1, orden)
 	if err != nil {
 		errorCeX(w, consulta, err)
 		return
@@ -54,14 +65,12 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 		Pagina:     pagina,
 		SinResults: len(res.Productos) == 0,
 	}
-	// Same shape as CeX's own links: /search/?stext=tomb+raider&page=2
-	enlace := func(n int) string {
-		u := "/search/?stext=" + url.QueryEscape(consulta)
-		if n > 1 {
-			u += "&page=" + strconv.Itoa(n)
-		}
-		return u
+	// Changing the order goes back to the first page.
+	for _, o := range opcionesOrden {
+		v.Ordenes = append(v.Ordenes, enlaceOrden{Etiqueta: o.Etiqueta, URL: enlaceBusqueda(consulta, o.Valor, 1), Actual: o.Valor == orden})
 	}
+	// The pages keep the order.
+	enlace := func(n int) string { return enlaceBusqueda(consulta, orden, n) }
 	if res.Paginas > 1 {
 		for n := 1; n <= res.Paginas; n++ {
 			v.Paginas = append(v.Paginas, enlacePagina{Numero: n, URL: enlace(n), Actual: n == pagina})
@@ -78,6 +87,19 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 		Consulta: consulta,
 		Busqueda: v,
 	})
+}
+
+// enlaceBusqueda builds a results link with the shape of CeX's own
+// (/search/?stext=tomb+raider&page=2), plus sort when it is not relevance.
+func enlaceBusqueda(consulta, orden string, pagina int) string {
+	u := "/search/?stext=" + url.QueryEscape(consulta)
+	if orden != "" {
+		u += "&sort=" + url.QueryEscape(orden)
+	}
+	if pagina > 1 {
+		u += "&page=" + strconv.Itoa(pagina)
+	}
+	return u
 }
 
 // errorCeX explains what went wrong when CeX could not be reached, without

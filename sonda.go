@@ -14,7 +14,7 @@ import (
 // check from the server that Go gets the same answer as curl.
 func sondear(consulta string) int {
 	inicio := time.Now()
-	res, crudo, err := consultarAlgolia(context.Background(), consulta, 0)
+	res, crudo, err := consultarAlgolia(context.Background(), consulta, 0, "")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		return 1

@@ -62,9 +62,48 @@ type resultadoBusqueda struct {
 	Productos []producto `json:"hits"`
 }
 
-// buscar returns one page (from 0) of results for consulta.
-func buscar(ctx context.Context, consulta string, pagina int) (resultadoBusqueda, error) {
-	r, _, err := consultarAlgolia(ctx, consulta, pagina)
+// opcionOrden is one of the sort options of the CeX website. Each one is a
+// replica of the main index named indiceAlgolia + "_" + Valor, as read from
+// the website's own requests; a replica holds the same products, only in
+// another order (measured: same nbHits in all seven).
+type opcionOrden struct {
+	Valor    string // ?sort= value and replica suffix; "" is relevance
+	Etiqueta string // the website's own label
+}
+
+var opcionesOrden = []opcionOrden{
+	{"", "Relevancia"},
+	{"popularity_desc", "Mas populares"},
+	{"price_asc", "Precios Menor - Mayor"},
+	{"price_desc", "Precios Mayor - Menor"},
+	{"box_name_asc", "Nombre del Productos a-z"},
+	{"box_name_desc", "Nombre del Productos z-a"},
+	{"rating_desc", "Mejor valorados"},
+}
+
+// ordenValido returns valor if it is one of the website's sort options and
+// "" (relevance) otherwise, so no visitor can make webye query an
+// arbitrary index.
+func ordenValido(valor string) string {
+	for _, o := range opcionesOrden {
+		if o.Valor == valor {
+			return valor
+		}
+	}
+	return ""
+}
+
+func indicePara(orden string) string {
+	if orden = ordenValido(orden); orden == "" {
+		return indiceAlgolia
+	}
+	return indiceAlgolia + "_" + orden
+}
+
+// buscar returns one page (from 0) of results for consulta, in the given
+// sort order ("" is relevance).
+func buscar(ctx context.Context, consulta string, pagina int, orden string) (resultadoBusqueda, error) {
+	r, _, err := consultarAlgolia(ctx, consulta, pagina, orden)
 	return r, err
 }
 
@@ -75,8 +114,9 @@ func normalizar(consulta string) string {
 }
 
 // consultarAlgolia also returns the raw response, for the probe.
-func consultarAlgolia(ctx context.Context, consulta string, pagina int) (resultadoBusqueda, respuesta, error) {
+func consultarAlgolia(ctx context.Context, consulta string, pagina int, orden string) (resultadoBusqueda, respuesta, error) {
 	consulta = normalizar(consulta)
+	orden = ordenValido(orden)
 	if consulta == "" || pagina < 0 {
 		return resultadoBusqueda{}, respuesta{}, nil
 	}
@@ -84,7 +124,7 @@ func consultarAlgolia(ctx context.Context, consulta string, pagina int) (resulta
 	// Algolia's analytics, webye sends neither.
 	cuerpo, err := json.Marshal(map[string]any{
 		"requests": []map[string]any{{
-			"indexName":             indiceAlgolia,
+			"indexName":             indicePara(orden),
 			"query":                 consulta,
 			"hitsPerPage":           resultadosPorPagina,
 			"page":                  pagina,
@@ -100,7 +140,9 @@ func consultarAlgolia(ctx context.Context, consulta string, pagina int) (resulta
 	}
 	direccion := baseAlgolia + "/1/indexes/*/queries"
 
-	r, err := algolia.obtener(ctx, consulta+"|"+strconv.Itoa(pagina), ttlBusqueda, func(ctx context.Context) (*http.Request, error) {
+	// Each sort order is a different search with its own cache entry.
+	clave := consulta + "|" + strconv.Itoa(pagina) + "|" + orden
+	r, err := algolia.obtener(ctx, clave, ttlBusqueda, func(ctx context.Context) (*http.Request, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, direccion, bytes.NewReader(cuerpo))
 		if err != nil {
 			return nil, err

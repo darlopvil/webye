@@ -526,6 +526,42 @@ a:hover { color: var(--blanco); }
     box-shadow: 3px 3px 0 var(--blanco);
 }
 
+/* Sort options are plain links, so they work without JavaScript. */
+.ordenes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin: 1rem 0 1.5rem;
+}
+.ordenes-titulo {
+    margin-right: .25rem;
+    color: var(--gris);
+}
+.ordenes a,
+.ordenes .actual {
+    padding: .2rem .6rem;
+    font-family: var(--titulo);
+    font-size: .95rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 2px solid var(--blanco);
+}
+.ordenes a {
+    color: var(--blanco);
+}
+.ordenes a:hover {
+    color: var(--negro);
+    background: var(--blanco);
+}
+.ordenes .actual {
+    color: var(--blanco);
+    background: var(--rojo);
+    border-color: var(--rojo);
+    box-shadow: 3px 3px 0 var(--blanco);
+}
+
 /* Two columns on phones: one product per screen is too much scrolling. */
 @media (max-width: 30rem) {
     .rejilla {
