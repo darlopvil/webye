@@ -28,6 +28,7 @@ var funciones = template.FuncMap{
 	"miles":   miles,
 	"deref":   func(v *float64) float64 { return *v },
 	"decimal": decimal,
+	"foto":    foto,
 }
 
 // Each page is parsed into its own set together with the base template,

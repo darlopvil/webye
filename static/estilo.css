@@ -414,14 +414,27 @@ a:hover { color: var(--blanco); }
     text-decoration: none;
 }
 
-/* Room for the product photo (#7): a square, so the grid does not jump
-   when images arrive. */
+/* A square for the product photo, so the grid does not jump while photos
+   load. Photos are portrait (4:5) and are shown whole. */
 .tarjeta-foto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
     aspect-ratio: 1;
     margin-bottom: .5rem;
     background:
         repeating-linear-gradient(-45deg, transparent 0 10px, rgba(255, 255, 255, .03) 10px 12px),
         #1d1d1d;
+}
+
+.tarjeta-foto img,
+.ficha-foto img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
 }
 
 .tarjeta-categoria {
@@ -571,8 +584,11 @@ a:hover { color: var(--blanco); }
     align-items: start;
 }
 
-/* Room for the product photo (#7). */
 .ficha-foto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
     aspect-ratio: 1;
     max-width: 32rem;
     background:

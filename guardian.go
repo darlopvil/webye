@@ -64,7 +64,7 @@ var (
 	cacheCeX = nuevaCache(cacheMaxima)
 	algolia  = nuevoGuardian("algolia", "application/json", cacheCeX)
 	wss2     = nuevoGuardian("wss2", "application/json", cacheCeX)
-	imagenes = nuevoGuardian("imagenes", "image/", cacheCeX)
+	imagenes = conRedirecciones(nuevoGuardian("imagenes", "image/", cacheCeX))
 )
 
 var (
@@ -107,6 +107,11 @@ type guardian struct {
 	vuelo        grupoVuelo
 	ahora        func() time.Time
 
+	// admiteRedireccion hands redirects to the caller, and caches them,
+	// instead of failing: CeX's image host answers a missing photo with a
+	// redirect to a generic picture.
+	admiteRedireccion bool
+
 	mu         sync.Mutex
 	pausaHasta time.Time
 	pausa      time.Duration
@@ -138,6 +143,12 @@ func nuevoGuardian(nombre, tipoEsperado string, c *cache) *guardian {
 		huecos:       make(chan struct{}, maxSimultaneas),
 		ahora:        time.Now,
 	}
+}
+
+// conRedirecciones makes a guardian hand redirects to its caller.
+func conRedirecciones(g *guardian) *guardian {
+	g.admiteRedireccion = true
+	return g
 }
 
 // obtener returns the response for clave from the cache or, if it is not
@@ -197,7 +208,8 @@ func (g *guardian) obtener(ctx context.Context, clave string, ttl time.Duration,
 		if err := g.evaluar(res, cuerpo); err != nil {
 			return respuesta{}, err
 		}
-		if r.Estado == http.StatusOK {
+		redireccion := r.Estado >= 300 && r.Estado < 400
+		if r.Estado == http.StatusOK || (g.admiteRedireccion && redireccion) {
 			if ttl == 0 {
 				ttl = maxAge(res.Header)
 			}
@@ -217,7 +229,7 @@ func (g *guardian) evaluar(res *http.Response, cuerpo []byte) error {
 	case estado == http.StatusTooManyRequests, estado == http.StatusForbidden, estado >= 500:
 		g.pausar(res, cuerpo)
 		return &errorRespuesta{Estado: estado, Tipo: res.Header.Get("Content-Type"), Cuerpo: cuerpo, causa: errBloqueo}
-	case estado >= 300 && estado < 400:
+	case estado >= 300 && estado < 400 && !g.admiteRedireccion:
 		return fmt.Errorf("%w: status %d", errRedireccion, estado)
 	case estado == http.StatusOK && !g.tipoValido(res.Header.Get("Content-Type")):
 		// A challenge page served with a 200 instead of the expected JSON

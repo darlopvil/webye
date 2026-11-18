@@ -93,6 +93,9 @@ func rutas() http.Handler {
 	mux.Handle("/product-detail/{$}", limitePaginas.envolver(http.HandlerFunc(paginaFicha)))
 	mux.Handle("/product-detail", limitePaginas.envolver(http.HandlerFunc(paginaFicha)))
 
+	// Product photos, with their own per-client limit.
+	mux.Handle("/img/", limiteImagenes.envolver(http.HandlerFunc(imagen)))
+
 	mux.HandleFunc("/robots.txt", robots)
 
 	mux.Handle("/static/", http.FileServer(http.FS(estaticosFS)))

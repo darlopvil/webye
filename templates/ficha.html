@@ -4,7 +4,7 @@
     <p class="miga">{{ if .Supercategoria }}{{ .Supercategoria }} › {{ end }}{{ .Categoria }}</p>
 
     <div class="ficha-cabeza">
-        <div class="ficha-foto" aria-hidden="true"></div>
+        <div class="ficha-foto">{{ with foto .Imagenes.Grande }}<img src="{{ . }}" alt="{{ $.Titulo }}" width="380" height="480">{{ end }}</div>
 
         <div class="ficha-datos">
             <h1 class="ficha-nombre">{{ .Nombre }}</h1>
