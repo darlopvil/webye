@@ -9,3 +9,4 @@ docker-compose.example.yml
 README.md
 LICENSE
 *_test.go
+docs

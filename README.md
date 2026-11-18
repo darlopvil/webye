@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.svg" alt="webye" width="305"></p>
+
 # webye
 
 A privacy-friendly frontend for [CeX](https://es.webuy.com/). Search products
