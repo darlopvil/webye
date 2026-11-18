@@ -3,7 +3,7 @@
 # webye
 
 A privacy-friendly frontend for [CeX](https://es.webuy.com/). Search products
-and see what CeX sells them for and what it pays for them, without
+and see what CeX sells them for and what it pays for them, without needing
 JavaScript, without trackers and without your browser ever talking to CeX.
 
 > Work in progress. The roadmap lives in the
@@ -28,13 +28,18 @@ use. No public instance is offered. Issues are welcome.
   for the cash CeX pays.
 - Product pages with specifications, description, rating and online or
   in-store stock.
+- Stock in every store, with Click & Collect and today's opening hours. It
+  is asked of CeX only when you open it, as its website does.
 - Price data the CeX website does not show: the previous price, the launch
   price and the date of the last price change.
 - The same paths as CeX: swap the domain of a CeX link for webye's and you
   land on the same search or product.
 - Products without a photo get webye's own placeholder instead of CeX's
   generic picture.
-- No JavaScript: plain HTML and CSS.
+- Ethical JavaScript: everything works with JavaScript off. The only
+  script, which opens the store stock panel without reloading the page, is
+  free software (AGPL-3.0, tagged for GNU LibreJS), unminified and served
+  by webye itself.
 - Your browser never contacts CeX or any third party: styles, fonts, icons
   and photos are served by the instance itself.
 - No cookies and no trackers. Searches carry no user token and no click

@@ -1,0 +1,16 @@
+{{ define "tiendas" }}
+{{ if .Error }}
+<p>{{ .Error }}</p>
+{{ else if .Lista }}
+<ul class="lista-tiendas">
+    {{ range .Lista }}
+    <li class="tienda">
+        <p class="tienda-cabeza"><span class="tienda-nombre">{{ .Nombre }}</span> <span class="tienda-unidades">{{ .Unidades }} en stock</span></p>
+        <p class="tienda-datos">{{ if .Recogida }}<span class="sello">Click &amp; Recoge</span>{{ end }}{{ with .Horario }} <span class="tenue">{{ . }}</span>{{ end }}</p>
+    </li>
+    {{ end }}
+</ul>
+{{ else }}
+<p>Ahora mismo no lo tiene ninguna tienda.</p>
+{{ end }}
+{{ end }}

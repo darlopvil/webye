@@ -50,6 +50,8 @@ func TestPagesNeedNothingTheCSPForbids(t *testing.T) {
 	wss2DePrueba(t, jsonDe(fichaIphone))
 	for _, ruta := range []string{"/", "/about", "/search/?stext=x", "/product-detail/?id=SAPPIP17P256GNCLIBA", "/nada"} {
 		html := strings.ToLower(pedirRuta(t, ruta).Body.String())
+		// The one script allowed: webye's own free one, from this server.
+		html = strings.ReplaceAll(html, strings.ToLower(`<script src="`+estatico("tiendas.js")+`" defer></script>`), "")
 		for _, prohibido := range []string{"<script", " style=", "<style", `="javascript:`, `="http://`, "<iframe"} {
 			if strings.Contains(html, prohibido) {
 				t.Errorf("%s contains %q, which the CSP would block or which reaches outside", ruta, prohibido)

@@ -834,3 +834,97 @@ a:hover { color: var(--blanco); }
 .filtros-acciones button:hover {
     background: var(--rojo-vivo);
 }
+
+/* Store stock: a drawer on the right, over the product page. */
+.enlace-tiendas {
+    display: inline-block;
+    margin-top: .5rem;
+    padding: .4rem 1rem;
+    font-family: var(--titulo);
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--blanco);
+    border: 2px solid var(--blanco);
+}
+.enlace-tiendas:hover {
+    color: var(--negro);
+    background: var(--blanco);
+}
+.panel-tiendas {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    width: min(28rem, 100%);
+}
+.panel-tiendas[hidden] {
+    display: none;
+}
+.panel-caja {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--negro);
+    border-left: 3px solid var(--rojo);
+}
+.panel-cabeza {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .8rem 1rem;
+    border-bottom: 2px solid var(--blanco);
+}
+.panel-cabeza h2 {
+    margin: 0;
+    font-family: var(--titulo);
+    font-size: 1.4rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+.panel-cerrar {
+    padding: 0 .3rem;
+    font-size: 1.4rem;
+    line-height: 1;
+    text-decoration: none;
+    color: var(--blanco);
+}
+.panel-cerrar:hover {
+    color: var(--rojo-vivo);
+}
+.panel-cuerpo {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1rem;
+}
+.lista-tiendas {
+    margin: .75rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+.tienda {
+    padding: .6rem 0;
+    border-bottom: 1px solid var(--gris);
+}
+.tienda-cabeza {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0;
+}
+.tienda-unidades {
+    font-family: var(--titulo);
+    white-space: nowrap;
+    color: var(--rojo-vivo);
+}
+.tienda-datos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin: .3rem 0 0;
+    font-size: .9rem;
+}

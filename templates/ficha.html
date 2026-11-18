@@ -27,6 +27,8 @@
                 {{ with .PrecioSalida }}<li>Salió a: {{ euros . }}</li>{{ end }}
                 {{ with .FechaCambio }}<li>Último cambio de precio: {{ . }}</li>{{ end }}
             </ul>
+
+            {{ if or (gt .Online 0) (gt .Tienda 0) }}<p><a class="enlace-tiendas" id="ver-tiendas" href="/product-detail/?id={{ .ID }}&amp;stores=1" data-tiendas="/product-detail/stores?id={{ .ID }}">Ver stock en tiendas</a></p>{{ end }}
         </div>
     </div>
 
@@ -47,6 +49,16 @@
         {{ .DescripcionHTML }}
     </section>
     {{ end }}
+
+    <aside class="panel-tiendas" id="tiendas" aria-labelledby="titulo-tiendas"{{ if not .Tiendas }} hidden{{ end }}>
+        <div class="panel-caja">
+            <div class="panel-cabeza">
+                <h2 id="titulo-tiendas">Stock en tiendas</h2>
+                <a class="panel-cerrar" href="/product-detail/?id={{ .ID }}" aria-label="Cerrar">✕</a>
+            </div>
+            <div class="panel-cuerpo">{{ with .Tiendas }}{{ template "tiendas" . }}{{ end }}</div>
+        </div>
+    </aside>
 </article>
 {{ end }}
 {{ end }}

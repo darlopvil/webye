@@ -9,6 +9,7 @@
     <title>{{ if .Titulo }}{{ .Titulo }} · {{ end }}webye</title>
     <link rel="icon" href="{{ estatico "favicon.svg" }}" type="image/svg+xml">
     <link rel="stylesheet" href="{{ estatico "estilo.css" }}">
+    {{ if .Ficha }}<script src="{{ estatico "tiendas.js" }}" defer></script>{{ end }}
 </head>
 <body>
     <header class="cabecera">

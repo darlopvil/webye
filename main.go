@@ -92,6 +92,8 @@ func rutas() http.Handler {
 	// Product pages, same URL as CeX, same per-client limit as search.
 	mux.Handle("/product-detail/{$}", limitePaginas.envolver(http.HandlerFunc(paginaFicha)))
 	mux.Handle("/product-detail", limitePaginas.envolver(http.HandlerFunc(paginaFicha)))
+	// Stock per store alone, for the script that opens it without a reload.
+	mux.Handle("/product-detail/stores", limitePaginas.envolver(http.HandlerFunc(paginaTiendas)))
 
 	// Product photos, with their own per-client limit.
 	mux.Handle("/img/", limiteImagenes.envolver(http.HandlerFunc(imagen)))

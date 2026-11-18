@@ -64,6 +64,7 @@ type vistaFicha struct {
 	DescripcionHTML  template.HTML
 	FechaCambio      string // dd/mm/yyyy
 	HuboOtroPrecio   bool
+	Tiendas          *vistaTiendas // only when the visitor asked for them
 }
 
 // obtenerFicha returns the details of one product, from the cache when
@@ -140,6 +141,12 @@ func paginaFicha(w http.ResponseWriter, r *http.Request) {
 		v.FechaCambio = p[8:10] + "/" + p[5:7] + "/" + p[0:4]
 	}
 	v.HuboOtroPrecio = f.PrecioAnterior != nil && *f.PrecioAnterior != f.Venta && *f.PrecioAnterior > 0
+
+	// Stock per store only when asked for (&stores=1), as on the website:
+	// one more request to CeX, never on a plain product page.
+	if r.URL.Query().Get("stores") == "1" {
+		v.Tiendas = vistaDeTiendas(obtenerTiendas(r.Context(), f.ID))
+	}
 
 	renderizar(w, http.StatusOK, "ficha", datosPagina{Titulo: f.Nombre, Ficha: v})
 }

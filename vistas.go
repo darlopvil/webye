@@ -34,18 +34,22 @@ var funciones = template.FuncMap{
 
 // Each page is parsed into its own set together with the base template,
 // because every page defines the same "contenido" block.
-func cargarPlantilla(pagina string) *template.Template {
-	return template.Must(template.New("base.html").Funcs(funciones).ParseFS(
-		plantillasFS,
-		"templates/base.html",
-		"templates/"+pagina+".html",
-	))
+func cargarPlantilla(pagina string, otras ...string) *template.Template {
+	archivos := []string{"templates/base.html", "templates/" + pagina + ".html"}
+	for _, o := range otras {
+		archivos = append(archivos, "templates/"+o+".html")
+	}
+	return template.Must(template.New("base.html").Funcs(funciones).ParseFS(plantillasFS, archivos...))
 }
+
+// fragmentos are pieces of a page served alone, for the script that fills
+// them in without reloading the page.
+var fragmentos = template.Must(template.New("").Funcs(funciones).ParseFS(plantillasFS, "templates/tiendas.html"))
 
 var plantillas = map[string]*template.Template{
 	"inicio":     cargarPlantilla("inicio"),
 	"resultados": cargarPlantilla("resultados"),
-	"ficha":      cargarPlantilla("ficha"),
+	"ficha":      cargarPlantilla("ficha", "tiendas"),
 	"about":      cargarPlantilla("about"),
 	"error":      cargarPlantilla("error"),
 }
@@ -57,6 +61,19 @@ func renderizar(w http.ResponseWriter, estado int, pagina string, datos datosPag
 	var buf bytes.Buffer
 	if err := plantillas[pagina].ExecuteTemplate(&buf, "base.html", datos); err != nil {
 		log.Printf("error rendering %s: %v", pagina, err)
+		http.Error(w, "Error interno", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(estado)
+	_, _ = buf.WriteTo(w)
+}
+
+// renderizarFragmento is renderizar for a fragment: no page around it.
+func renderizarFragmento(w http.ResponseWriter, estado int, nombre string, datos any) {
+	var buf bytes.Buffer
+	if err := fragmentos.ExecuteTemplate(&buf, nombre, datos); err != nil {
+		log.Printf("error rendering fragment %s: %v", nombre, err)
 		http.Error(w, "Error interno", http.StatusInternalServerError)
 		return
 	}
