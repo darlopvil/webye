@@ -111,18 +111,27 @@ func consultarAlgolia(ctx context.Context, consulta string, pagina int) (resulta
 	if err != nil {
 		return resultadoBusqueda{}, respuesta{}, err
 	}
-	if r.Estado != http.StatusOK {
-		return resultadoBusqueda{}, r, fmt.Errorf("Algolia answered %d", r.Estado)
+	res, err := leerAlgolia(r)
+	if err != nil {
+		// The answer arrived but is not what webye expects: Algolia or the
+		// CeX proxy changed. /salud reports it.
+		algolia.fallo(err)
 	}
+	return res, r, err
+}
 
+func leerAlgolia(r respuesta) (resultadoBusqueda, error) {
+	if r.Estado != http.StatusOK {
+		return resultadoBusqueda{}, fmt.Errorf("Algolia answered %d", r.Estado)
+	}
 	var datos struct {
 		Results []resultadoBusqueda `json:"results"`
 	}
 	if err := json.Unmarshal(r.Cuerpo, &datos); err != nil {
-		return resultadoBusqueda{}, r, fmt.Errorf("unreadable Algolia response: %w", err)
+		return resultadoBusqueda{}, fmt.Errorf("unreadable Algolia response: %w", err)
 	}
 	if len(datos.Results) == 0 {
-		return resultadoBusqueda{}, r, errors.New("Algolia response without results")
+		return resultadoBusqueda{}, errors.New("Algolia response without results")
 	}
-	return datos.Results[0], r, nil
+	return datos.Results[0], nil
 }

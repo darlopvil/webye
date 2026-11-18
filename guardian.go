@@ -79,7 +79,7 @@ var (
 )
 
 // errorRespuesta carries the response that made the guardian give up, so a
-// caller can tell, for example, a rejected key from a Cloudflare block.
+// caller can still look at what the upstream answered.
 type errorRespuesta struct {
 	Estado int
 	Tipo   string
@@ -115,6 +115,11 @@ type guardian struct {
 	mu         sync.Mutex
 	pausaHasta time.Time
 	pausa      time.Duration
+
+	// Result of the last request that really went upstream, for /salud.
+	ultimaVez    time.Time
+	ultimoEstado int
+	ultimoFallo  string
 }
 
 func nuevoCliente() *http.Client {
@@ -184,41 +189,68 @@ func (g *guardian) obtener(ctx context.Context, clave string, ttl time.Duration,
 		}
 		req.Header.Set("User-Agent", agenteUsuario)
 
-		res, err := g.cliente.Do(req)
-		if err != nil {
-			// Go's error repeats the full URL, which can carry the search
-			// terms and the Algolia key. Keep only the host.
-			var ue *url.Error
-			if errors.As(err, &ue) {
-				return respuesta{}, fmt.Errorf("%s %s: %w", ue.Op, req.URL.Host, ue.Err)
-			}
-			return respuesta{}, err
-		}
-		defer res.Body.Close()
-
-		cuerpo, err := io.ReadAll(io.LimitReader(res.Body, tamanoMaximo+1))
-		if err != nil {
-			return respuesta{}, err
-		}
-		if len(cuerpo) > tamanoMaximo {
-			return respuesta{}, errDemasiado
-		}
-
-		r := respuesta{Estado: res.StatusCode, Tipo: res.Header.Get("Content-Type"), Cuerpo: cuerpo}
-		if err := g.evaluar(res, cuerpo); err != nil {
-			return respuesta{}, err
-		}
-		redireccion := r.Estado >= 300 && r.Estado < 400
-		if r.Estado == http.StatusOK || (g.admiteRedireccion && redireccion) {
-			if ttl == 0 {
-				ttl = maxAge(res.Header)
-			}
-			if ttl > 0 {
-				g.cache.guardar(clave, r, g.ahora().Add(ttl))
-			}
-		}
-		return r, nil
+		r, err := g.llamar(req, clave, ttl)
+		g.anotar(r.Estado, err)
+		return r, err
 	})
+}
+
+// llamar sends one request upstream and checks the answer.
+func (g *guardian) llamar(req *http.Request, clave string, ttl time.Duration) (respuesta, error) {
+	res, err := g.cliente.Do(req)
+	if err != nil {
+		// Go's error repeats the full URL, which can carry the search
+		// terms and the Algolia key. Keep only the host.
+		var ue *url.Error
+		if errors.As(err, &ue) {
+			return respuesta{}, fmt.Errorf("%s %s: %w", ue.Op, req.URL.Host, ue.Err)
+		}
+		return respuesta{}, err
+	}
+	defer res.Body.Close()
+
+	cuerpo, err := io.ReadAll(io.LimitReader(res.Body, tamanoMaximo+1))
+	if err != nil {
+		return respuesta{}, err
+	}
+	if len(cuerpo) > tamanoMaximo {
+		return respuesta{}, errDemasiado
+	}
+
+	r := respuesta{Estado: res.StatusCode, Tipo: res.Header.Get("Content-Type"), Cuerpo: cuerpo}
+	if err := g.evaluar(res, cuerpo); err != nil {
+		return respuesta{}, err
+	}
+	redireccion := r.Estado >= 300 && r.Estado < 400
+	if r.Estado == http.StatusOK || (g.admiteRedireccion && redireccion) {
+		if ttl == 0 {
+			ttl = maxAge(res.Header)
+		}
+		if ttl > 0 {
+			g.cache.guardar(clave, r, g.ahora().Add(ttl))
+		}
+	}
+	return r, nil
+}
+
+// anotar keeps the result of the last real request for /salud.
+func (g *guardian) anotar(estado int, err error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.ultimaVez = g.ahora()
+	g.ultimoEstado = estado
+	g.ultimoFallo = ""
+	if err != nil {
+		g.ultimoFallo = err.Error()
+	}
+}
+
+// fallo records a problem the caller found in an answer the guardian
+// accepted, such as JSON that no longer has the expected shape.
+func (g *guardian) fallo(err error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.ultimoFallo = err.Error()
 }
 
 // evaluar decides whether a response means CeX is pushing back. Blocks open

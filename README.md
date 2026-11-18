@@ -35,6 +35,9 @@ use. No public instance is offered. Issues are welcome.
   its website requests.
 - Polite to CeX: repeated requests are collapsed, each visitor is rate
   limited, and webye stops calling on its own when CeX pushes back.
+- A `/salud` page for uptime monitors: it reports each CeX service from the
+  last real request, makes no request of its own, and turns red when an API
+  changes shape. `/salud?destino=algolia`, `wss2` or `imagenes` checks one.
 
 ## License
 

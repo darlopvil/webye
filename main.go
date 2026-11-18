@@ -96,6 +96,9 @@ func rutas() http.Handler {
 	// Product photos, with their own per-client limit.
 	mux.Handle("/img/", limiteImagenes.envolver(http.HandlerFunc(imagen)))
 
+	// Upstream health for monitors. It never contacts CeX.
+	mux.HandleFunc("/salud", paginaSalud)
+
 	mux.HandleFunc("/robots.txt", robots)
 
 	mux.Handle("/static/", http.FileServer(http.FS(estaticosFS)))

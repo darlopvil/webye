@@ -82,7 +82,9 @@ func obtenerFicha(ctx context.Context, id string) (ficha, error) {
 		return ficha{}, errSinProducto
 	}
 	if r.Estado != http.StatusOK {
-		return ficha{}, fmt.Errorf("wss2 answered %d", r.Estado)
+		err := fmt.Errorf("wss2 answered %d", r.Estado)
+		wss2.fallo(err)
+		return ficha{}, err
 	}
 	var datos struct {
 		Response struct {
@@ -93,7 +95,11 @@ func obtenerFicha(ctx context.Context, id string) (ficha, error) {
 		} `json:"response"`
 	}
 	if err := json.Unmarshal(r.Cuerpo, &datos); err != nil {
-		return ficha{}, fmt.Errorf("unreadable wss2 response: %w", err)
+		// The answer arrived but no longer has the expected shape: the wss2
+		// API changed. /salud reports it.
+		err = fmt.Errorf("unreadable wss2 response: %w", err)
+		wss2.fallo(err)
+		return ficha{}, err
 	}
 	if datos.Response.Ack != "Success" || len(datos.Response.Data.BoxDetails) == 0 {
 		return ficha{}, errSinProducto
