@@ -54,8 +54,8 @@ func (g *guardian) salud() (string, bool) {
 	case g.ultimaVez.IsZero():
 		return fmt.Sprintf("%s: sin peticiones desde el arranque", g.nombre), true
 	case g.ultimoFallo != "":
-		return fmt.Sprintf("%s: FALLO en la última petición (%s): %s", g.nombre, hora(g.ultimaVez), g.ultimoFallo), false
+		return fmt.Sprintf("%s: FALLO en la última petición (%s): %s · %s", g.nombre, hora(g.ultimaVez), g.ultimoFallo, g.tiempos.texto()), false
 	default:
-		return fmt.Sprintf("%s: OK, última petición %s con estado %d", g.nombre, hora(g.ultimaVez), g.ultimoEstado), true
+		return fmt.Sprintf("%s: OK, última petición %s con estado %d · %s", g.nombre, hora(g.ultimaVez), g.ultimoEstado, g.tiempos.texto()), true
 	}
 }

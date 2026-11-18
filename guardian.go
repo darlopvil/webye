@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -23,9 +24,12 @@ import (
 // cap and the circuit breaker below.
 
 const (
-	// Same patience CeX's own website has: its service worker gives up on the
-	// network after 3 seconds (networkTimeoutSeconds = 3 in sw.js).
-	tiempoMaximo = 3 * time.Second
+	// While measuring how long CeX really takes when it is slow (#21): the
+	// most webye can wait and still send the page, 5 s under the server's
+	// 30 s write timeout. CeX's service worker gives up on the network
+	// after 3 s only to fall back to its cache; with nothing cached the
+	// browser keeps waiting, so 3 s was sooner than the website itself.
+	tiempoMaximo = 25 * time.Second
 
 	// No more parallel requests per upstream than a browser opens per host
 	// over HTTP/1.1.
@@ -122,6 +126,25 @@ type guardian struct {
 	ultimaVez    time.Time
 	ultimoEstado int
 	ultimoFallo  string
+
+	tiempos tiempos
+}
+
+// tiempos counts how long upstream answers take, since start-up, to pick
+// the timeout from real numbers (#21). Only durations: no URLs.
+type tiempos struct {
+	peticiones int
+	mas1       int // took 1 s or more
+	mas3       int
+	mas10      int
+	agotadas   int // gave up after tiempoMaximo
+	masLenta   time.Duration
+}
+
+func (t tiempos) texto() string {
+	segundos := strings.Replace(strconv.FormatFloat(t.masLenta.Seconds(), 'f', 1, 64), ".", ",", 1)
+	return fmt.Sprintf("%d peticiones; tardaron 1 s o más: %d, 3 s o más: %d, 10 s o más: %d; agotadas: %d; la más lenta: %s s",
+		t.peticiones, t.mas1, t.mas3, t.mas10, t.agotadas, segundos)
 }
 
 func nuevoCliente() *http.Client {
@@ -191,8 +214,9 @@ func (g *guardian) obtener(ctx context.Context, clave string, ttl time.Duration,
 		}
 		req.Header.Set("User-Agent", agenteUsuario)
 
+		inicio := time.Now()
 		r, err := g.llamar(req, clave, ttl)
-		g.anotar(r.Estado, err)
+		g.anotar(r.Estado, err, time.Since(inicio))
 		return r, err
 	})
 }
@@ -237,7 +261,7 @@ func (g *guardian) llamar(req *http.Request, clave string, ttl time.Duration) (r
 }
 
 // anotar keeps the result of the last real request for /salud.
-func (g *guardian) anotar(estado int, err error) {
+func (g *guardian) anotar(estado int, err error, duracion time.Duration) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.ultimaVez = g.ahora()
@@ -245,6 +269,26 @@ func (g *guardian) anotar(estado int, err error) {
 	g.ultimoFallo = ""
 	if err != nil {
 		g.ultimoFallo = err.Error()
+	}
+
+	t := &g.tiempos
+	t.peticiones++
+	t.masLenta = max(t.masLenta, duracion)
+	for _, c := range []struct {
+		limite time.Duration
+		cuenta *int
+	}{{time.Second, &t.mas1}, {3 * time.Second, &t.mas3}, {10 * time.Second, &t.mas10}} {
+		if duracion >= c.limite {
+			*c.cuenta++
+		}
+	}
+	var red net.Error
+	agotada := errors.As(err, &red) && red.Timeout()
+	if agotada {
+		t.agotadas++
+	}
+	if duracion >= time.Second || agotada {
+		log.Printf("upstream %s slow: %.1fs, status %d, timed out %v", g.nombre, duracion.Seconds(), estado, agotada)
 	}
 }
 

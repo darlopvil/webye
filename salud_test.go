@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestHealthBeforeAnyRequestIsGreen(t *testing.T) {
@@ -69,5 +71,25 @@ func TestHealthShowsAPause(t *testing.T) {
 func TestHealthUnknownUpstream(t *testing.T) {
 	if w := pedirRuta(t, "/salud?destino=otro"); w.Code != http.StatusNotFound {
 		t.Fatalf("got %d", w.Code)
+	}
+}
+
+// agotado is what the HTTP client returns when tiempoMaximo runs out.
+type agotado struct{}
+
+func (agotado) Error() string   { return "Client.Timeout exceeded" }
+func (agotado) Timeout() bool   { return true }
+func (agotado) Temporary() bool { return true }
+
+func TestHealthCountsHowLongAnswersTake(t *testing.T) {
+	g := nuevoGuardian("prueba", "application/json", nuevaCache(cacheMaxima))
+	for _, d := range []time.Duration{100 * time.Millisecond, 1200 * time.Millisecond, 3500 * time.Millisecond, 12 * time.Second} {
+		g.anotar(http.StatusOK, nil, d)
+	}
+	g.anotar(0, fmt.Errorf("Get wss2.cex.es.webuy.io: %w", agotado{}), 25*time.Second)
+	linea, _ := g.salud()
+	quiero := "5 peticiones; tardaron 1 s o más: 4, 3 s o más: 3, 10 s o más: 2; agotadas: 1; la más lenta: 25,0 s"
+	if !strings.Contains(linea, quiero) {
+		t.Fatalf("got %q", linea)
 	}
 }
