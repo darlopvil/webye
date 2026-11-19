@@ -68,6 +68,18 @@ func TestProductPageShowsEverything(t *testing.T) {
 	}
 }
 
+func TestUnratedProductsShowNoRating(t *testing.T) {
+	// CeX sends 0 for a product nobody has rated; null or a missing field
+	// are treated the same.
+	for _, nota := range []string{`"boxRating":0,`, `"boxRating":null,`, ``} {
+		wss2DePrueba(t, jsonDe(strings.Replace(fichaIphone, `"boxRating":4.8,`, nota, 1)))
+		html := pedirRuta(t, "/product-detail/?id=SAPPIP17P256GNCLIBA").Body.String()
+		if strings.Contains(html, "ficha-valoracion") || strings.Contains(html, "★") {
+			t.Errorf("with %q a rating is shown", nota)
+		}
+	}
+}
+
 func TestProductPageWithoutSlashWorksToo(t *testing.T) {
 	wss2DePrueba(t, jsonDe(fichaIphone))
 	if w := pedirRuta(t, "/product-detail?id=SAPPIP17P256GNCLIBA"); w.Code != http.StatusOK {

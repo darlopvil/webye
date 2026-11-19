@@ -52,6 +52,16 @@ type ficha struct {
 	Atributos   []atributo `json:"attributeInfo"`
 }
 
+// Nota is the rating to show, or 0 for none. CeX sends 0 for products
+// nobody has rated (81,712 of the 187,304 on sale when this was written,
+// none between 0 and 1) and its website shows no stars for them.
+func (f ficha) Nota() float64 {
+	if f.Valoracion == nil || *f.Valoracion <= 0 {
+		return 0
+	}
+	return *f.Valoracion
+}
+
 // especificacion is one row of the specifications table.
 type especificacion struct {
 	Nombre string

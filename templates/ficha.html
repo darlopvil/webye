@@ -8,7 +8,7 @@
 
         <div class="ficha-datos">
             <h1 class="ficha-nombre">{{ .Nombre }}</h1>
-            {{ with .Valoracion }}<p class="ficha-valoracion">★ {{ decimal (deref .) }}</p>{{ end }}
+            {{ with .Nota }}<p class="ficha-valoracion">★ {{ decimal . }}</p>{{ end }}
 
             <p class="ficha-precio">{{ euros .Venta }}</p>
             <p class="ficha-compra">
