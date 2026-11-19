@@ -25,6 +25,12 @@
                 <a href="/about">Acerca de</a>
             </nav>
         </div>
+        {{ with .Secciones }}
+        <nav class="secciones" aria-label="Secciones">
+            {{ range . }}<a href="/supercat?superCatId={{ .ID }}&amp;superCatName={{ .Nombre }}">{{ .Nombre }}</a>
+            {{ end }}
+        </nav>
+        {{ end }}
     </header>
     <div class="cinta" aria-hidden="true"></div>
 

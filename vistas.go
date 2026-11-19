@@ -21,6 +21,11 @@ type datosPagina struct {
 	Inicio   bool
 	Busqueda *vistaBusqueda
 	Ficha    *vistaFicha
+	Seccion  *vistaSeccion
+
+	// Secciones are the supercategories of the header bar, set by
+	// renderizar.
+	Secciones []superCat
 }
 
 var funciones = template.FuncMap{
@@ -50,6 +55,7 @@ var plantillas = map[string]*template.Template{
 	"inicio":     cargarPlantilla("inicio"),
 	"resultados": cargarPlantilla("resultados"),
 	"ficha":      cargarPlantilla("ficha", "tiendas"),
+	"seccion":    cargarPlantilla("seccion"),
 	"about":      cargarPlantilla("about"),
 	"error":      cargarPlantilla("error"),
 }
@@ -58,6 +64,9 @@ var plantillas = map[string]*template.Template{
 // a failure halfway through the page becomes a clean 500 instead of half a
 // page served with a 200.
 func renderizar(w http.ResponseWriter, estado int, pagina string, datos datosPagina) {
+	if datos.Secciones == nil {
+		datos.Secciones = seccionesActuales()
+	}
 	var buf bytes.Buffer
 	if err := plantillas[pagina].ExecuteTemplate(&buf, "base.html", datos); err != nil {
 		log.Printf("error rendering %s: %v", pagina, err)

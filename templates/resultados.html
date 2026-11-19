@@ -1,9 +1,16 @@
 {{ define "contenido" }}
 {{ with .Busqueda }}
 <section class="resultados">
+    {{ with .Titulo }}<h1 class="titulo-seccion">{{ . }}</h1>{{ end }}
+    {{ with .Categorias }}
+    <nav class="categorias" aria-label="Categorías">
+        {{ range . }}<a href="{{ .URL }}">{{ .Nombre }}</a>
+        {{ end }}
+    </nav>
+    {{ end }}
     <p class="resumen">
-        {{ if .SinResults }}{{ if .ConFiltros }}Nada con estos filtros para «{{ $.Consulta }}».{{ else }}Nada en stock para «{{ $.Consulta }}».{{ end }}
-        {{ else }}<strong>{{ miles .Total }}</strong> {{ if eq .Total 1 }}resultado{{ else }}resultados{{ end }} para «{{ $.Consulta }}»{{ end }}
+        {{ if .SinResults }}{{ if .ConFiltros }}Nada con estos filtros {{ .Donde }}.{{ else }}Nada en stock {{ .Donde }}.{{ end }}
+        {{ else }}<strong>{{ miles .Total }}</strong> {{ if eq .Total 1 }}resultado{{ else }}resultados{{ end }} {{ .Donde }}{{ end }}
     </p>
     {{ if .Recortado }}
     <p class="aviso-corto">CeX solo deja recorrer los primeros 1.000. Afina la búsqueda para llegar al resto.</p>
@@ -13,7 +20,8 @@
     <details class="filtros"{{ if .Activos }} open{{ end }}>
         <summary>Filtros{{ if .Activos }} <span class="filtros-activos">{{ .Activos }}</span>{{ end }}</summary>
         <form class="filtros-formulario" action="/search/" method="get">
-            <input type="hidden" name="stext" value="{{ .Consulta }}">
+            {{ with .Consulta }}<input type="hidden" name="stext" value="{{ . }}">{{ end }}
+            {{ range .Ocultos }}<input type="hidden" name="{{ .Nombre }}" value="{{ .Valor }}">{{ end }}
             {{ with .Orden }}<input type="hidden" name="sort" value="{{ . }}">{{ end }}
             <div class="filtros-grupos">
                 <fieldset class="grupo-filtro">

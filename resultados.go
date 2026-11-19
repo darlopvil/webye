@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // Algolia only lets the first 1,000 results of a search be browsed
@@ -22,6 +23,9 @@ type vistaBusqueda struct {
 	Siguiente  string
 	Ordenes    []enlaceOrden
 	Filtros    *vistaFiltros
+	Titulo     string          // the product line or category, if any
+	Donde      string          // «what» was searched, and where
+	Categorias []enlaceSeccion // a product line's categories
 	ConFiltros bool
 	SinResults bool
 }
@@ -45,7 +49,8 @@ type enlacePagina struct {
 func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	consulta := normalizar(q.Get("stext"))
-	if consulta == "" {
+	amb := leerAmbito(q)
+	if consulta == "" && !amb.usado() {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -60,11 +65,11 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 	// Its result goes to the website's URL shape, which is the one to
 	// keep or share, without asking CeX anything.
 	if desdeFormulario(q) {
-		http.Redirect(w, r, enlaceBusqueda(consulta, orden, f, 1), http.StatusSeeOther)
+		http.Redirect(w, r, enlaceBusqueda(consulta, amb, orden, f, 1), http.StatusSeeOther)
 		return
 	}
 
-	res, err := buscar(r.Context(), peticionBusqueda{Consulta: consulta, Pagina: pagina - 1, Orden: orden, Filtros: f})
+	res, err := buscar(r.Context(), peticionBusqueda{Consulta: consulta, Pagina: pagina - 1, Orden: orden, Filtros: f, Ambito: amb})
 	if errors.Is(err, errFiltroInvalido) {
 		renderizar(w, http.StatusBadRequest, "error", datosPagina{
 			Titulo:   "Filtros no válidos",
@@ -85,17 +90,38 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 		Pagina:     pagina,
 		ConFiltros: f.activos(),
 		SinResults: len(res.Productos) == 0,
+		Titulo:     amb.nombre(),
+	}
+	titulo := consulta
+	switch {
+	case consulta != "" && amb.usado():
+		v.Donde = "para «" + consulta + "» en «" + amb.nombre() + "»"
+		titulo = consulta + " · " + amb.nombre()
+	case amb.usado():
+		v.Donde = "en «" + amb.nombre() + "»"
+		titulo = amb.nombre()
+	default:
+		v.Donde = "para «" + consulta + "»"
+	}
+	// A product line links to its categories, as on the website. Without
+	// them the page still works, so a failure only leaves them out.
+	if amb.Linea > 0 && len(amb.Categorias) == 0 {
+		if cats, err := obtenerCategorias(r.Context(), amb.Linea); err == nil {
+			for _, c := range cats {
+				v.Categorias = append(v.Categorias, enlaceSeccion{Nombre: c.Nombre, URL: enlaceBusqueda("", ambito{Categorias: []int{c.ID}, CategoriaNombre: c.Nombre}, "", filtros{}, 1)})
+			}
+		}
 	}
 	// With no results and no filters there is nothing to narrow down.
 	if !v.SinResults || v.ConFiltros {
-		v.Filtros = vistaDeFiltros(consulta, orden, f, res.Facetas)
+		v.Filtros = vistaDeFiltros(consulta, amb, orden, f, res.Facetas)
 	}
 	// Changing the order keeps the filters and goes back to the first page.
 	for _, o := range opcionesOrden {
-		v.Ordenes = append(v.Ordenes, enlaceOrden{Etiqueta: o.Etiqueta, URL: enlaceBusqueda(consulta, o.Valor, f, 1), Actual: o.Valor == orden})
+		v.Ordenes = append(v.Ordenes, enlaceOrden{Etiqueta: o.Etiqueta, URL: enlaceBusqueda(consulta, amb, o.Valor, f, 1), Actual: o.Valor == orden})
 	}
 	// The pages keep the order and the filters.
-	enlace := func(n int) string { return enlaceBusqueda(consulta, orden, f, n) }
+	enlace := func(n int) string { return enlaceBusqueda(consulta, amb, orden, f, n) }
 	if res.Paginas > 1 {
 		for n := 1; n <= res.Paginas; n++ {
 			v.Paginas = append(v.Paginas, enlacePagina{Numero: n, URL: enlace(n), Actual: n == pagina})
@@ -108,25 +134,31 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	renderizar(w, http.StatusOK, "resultados", datosPagina{
-		Titulo:   consulta,
+		Titulo:   titulo,
 		Consulta: consulta,
 		Busqueda: v,
 	})
 }
 
 // enlaceBusqueda builds a results link with the shape of CeX's own
-// (/search/?stext=tomb+raider&stores=…&page=2), plus sort when it is not
-// relevance.
-func enlaceBusqueda(consulta, orden string, f filtros, pagina int) string {
-	u := "/search/?stext=" + url.QueryEscape(consulta)
+// (/search/?stext=tomb+raider&categoryIds=1001&stores=…&page=2), plus sort
+// when it is not relevance.
+func enlaceBusqueda(consulta string, a ambito, orden string, f filtros, pagina int) string {
+	var partes []string
+	if consulta != "" {
+		partes = append(partes, "stext="+url.QueryEscape(consulta))
+	}
+	partes = append(partes, a.parametros()...)
 	if orden != "" {
-		u += "&sort=" + url.QueryEscape(orden)
+		partes = append(partes, "sort="+url.QueryEscape(orden))
 	}
-	u += f.parametros()
+	if p := strings.TrimPrefix(f.parametros(), "&"); p != "" {
+		partes = append(partes, p)
+	}
 	if pagina > 1 {
-		u += "&page=" + strconv.Itoa(pagina)
+		partes = append(partes, "page="+strconv.Itoa(pagina))
 	}
-	return u
+	return "/search/?" + strings.Join(partes, "&")
 }
 
 // errorCeX explains what went wrong when CeX could not be reached, without

@@ -1,0 +1,15 @@
+{{ define "contenido" }}
+{{ with .Seccion }}
+<section class="seccion">
+    <h1 class="titulo-seccion">{{ .Nombre }}</h1>
+    {{ if .Lineas }}
+    <ul class="baldosas">
+        {{ range .Lineas }}<li><a href="{{ .URL }}">{{ .Nombre }}</a></li>
+        {{ end }}
+    </ul>
+    {{ else }}
+    <p>Ahora mismo no hay nada en esta sección.</p>
+    {{ end }}
+</section>
+{{ end }}
+{{ end }}

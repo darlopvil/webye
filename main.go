@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"flag"
 	"log"
@@ -55,6 +56,10 @@ func main() {
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
+	// The sections bar of the header: one request to CeX now
+	// and then one a day, never while a page waits.
+	go mantenerSecciones(context.Background())
+
 	log.Printf("Listening on %s", srv.Addr)
 	log.Fatal(srv.ListenAndServe())
 }
@@ -100,6 +105,9 @@ func rutas() http.Handler {
 
 	// Upstream health for monitors. It never contacts CeX.
 	mux.HandleFunc("/salud", paginaSalud)
+
+	// Sections, with the website's path: /supercat?superCatId=1&superCatName=Juegos
+	mux.Handle("/supercat", limitePaginas.envolver(http.HandlerFunc(paginaSuperCat)))
 
 	mux.HandleFunc("/robots.txt", robots)
 

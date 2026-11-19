@@ -123,6 +123,7 @@ type peticionBusqueda struct {
 	Pagina   int    // from 0, as Algolia counts
 	Orden    string // "" is relevance
 	Filtros  filtros
+	Ambito   ambito // a product line or categories, see secciones.go
 }
 
 // buscar returns one page of results.
@@ -141,7 +142,8 @@ func normalizar(consulta string) string {
 func consultarAlgolia(ctx context.Context, p peticionBusqueda) (resultadoBusqueda, respuesta, error) {
 	p.Consulta = normalizar(p.Consulta)
 	p.Orden = ordenValido(p.Orden)
-	if p.Consulta == "" || p.Pagina < 0 {
+	// A product line or a category is a search without text.
+	if (p.Consulta == "" && !p.Ambito.usado()) || p.Pagina < 0 {
 		return resultadoBusqueda{}, respuesta{}, nil
 	}
 	cuerpo, err := json.Marshal(map[string]any{"requests": consultasAlgolia(p)})
@@ -153,7 +155,8 @@ func consultarAlgolia(ctx context.Context, p peticionBusqueda) (resultadoBusqued
 	// Each sort order and each set of filters is a different search with
 	// its own cache entry. The filters are written in their canonical
 	// order, so the same filters in another order share it.
-	clave := p.Consulta + "|" + strconv.Itoa(p.Pagina) + "|" + p.Orden + "|" + p.Filtros.parametros()
+	clave := p.Consulta + "|" + strconv.Itoa(p.Pagina) + "|" + p.Orden + "|" + p.Filtros.parametros() +
+		"|" + strconv.Itoa(p.Ambito.Linea) + "|" + p.Ambito.idsCategorias()
 	r, err := algolia.obtener(ctx, clave, ttlBusqueda, func(ctx context.Context) (*http.Request, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, direccion, bytes.NewReader(cuerpo))
 		if err != nil {
@@ -187,6 +190,10 @@ func consultasAlgolia(p peticionBusqueda) []map[string]any {
 		filtro = filtroVisible
 	}
 	numericos := p.Filtros.numericos()
+	if p.Ambito.Linea > 0 {
+		numericos = append(numericos, "productLineId="+strconv.Itoa(p.Ambito.Linea))
+	}
+	categorias := p.Ambito.categoriasAlgolia()
 
 	// No userToken and no click analytics: the website sends both for
 	// Algolia's analytics, webye sends neither.
@@ -202,7 +209,7 @@ func consultasAlgolia(p peticionBusqueda) []map[string]any {
 		"attributesToHighlight": []string{},
 		"filters":               filtro,
 	}
-	if f := p.Filtros.facetFilters(""); len(f) > 0 {
+	if f := append(p.Filtros.facetFilters(""), categorias...); len(f) > 0 {
 		principal["facetFilters"] = f
 	}
 	if len(numericos) > 0 {
@@ -230,7 +237,7 @@ func consultasAlgolia(p peticionBusqueda) []map[string]any {
 			"attributesToHighlight": []string{},
 			"filters":               filtro,
 		}
-		if f := p.Filtros.facetFilters(g.Atributo); len(f) > 0 {
+		if f := append(p.Filtros.facetFilters(g.Atributo), categorias...); len(f) > 0 {
 			recuento["facetFilters"] = f
 		}
 		if len(numericos) > 0 {

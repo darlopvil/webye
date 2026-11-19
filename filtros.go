@@ -290,6 +290,13 @@ type vistaFiltros struct {
 	filtros
 	Grupos []grupoVista // shadows filtros.Grupos: the lists as shown
 	Quitar string       // the same search without filters
+	// The product line or categories, kept by the form.
+	Ocultos []campoOculto
+}
+
+type campoOculto struct {
+	Nombre string
+	Valor  string
 }
 
 // etiquetas are the website's titles for the lists that are not product
@@ -302,13 +309,16 @@ var etiquetas = map[string]string{
 // vistaDeFiltros builds the panel: stores and category first, then the
 // product attributes, as on the website. Ticked values always show, even
 // when no product is left with them, so they can be unticked.
-func vistaDeFiltros(consulta, orden string, f filtros, facetas map[string]map[string]int) *vistaFiltros {
+func vistaDeFiltros(consulta string, a ambito, orden string, f filtros, facetas map[string]map[string]int) *vistaFiltros {
 	v := &vistaFiltros{
 		Consulta: consulta,
 		Orden:    orden,
 		Activos:  f.cuantos(),
 		filtros:  f,
-		Quitar:   enlaceBusqueda(consulta, orden, filtros{}, 1),
+		Quitar:   enlaceBusqueda(consulta, a, orden, filtros{}, 1),
+	}
+	for _, c := range a.campos() {
+		v.Ocultos = append(v.Ocultos, campoOculto{Nombre: c[0], Valor: c[1]})
 	}
 	var atributos []string
 	for a := range facetas {
