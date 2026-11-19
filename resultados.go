@@ -13,6 +13,11 @@ import (
 // (measured: with one result per page, nbPages is exactly 1000).
 const limiteAlgolia = 1000
 
+// paginasMaximas is the last page Algolia can serve. Past it, Algolia
+// answers nothing at all (measured: page 50 of «nintendo» gives nbHits 0
+// and nbPages 0), as if nothing matched.
+const paginasMaximas = (limiteAlgolia + resultadosPorPagina - 1) / resultadosPorPagina
+
 type vistaBusqueda struct {
 	Total      int
 	Recortado  bool // more results than Algolia lets anyone browse
@@ -68,6 +73,11 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, enlaceBusqueda(consulta, amb, orden, f, 1), http.StatusSeeOther)
 		return
 	}
+	// A page Algolia cannot serve goes to the first one without asking CeX.
+	if pagina > paginasMaximas {
+		http.Redirect(w, r, enlaceBusqueda(consulta, amb, orden, f, 1), http.StatusSeeOther)
+		return
+	}
 
 	res, err := buscar(r.Context(), peticionBusqueda{Consulta: consulta, Pagina: pagina - 1, Orden: orden, Filtros: f, Ambito: amb})
 	if errors.Is(err, errFiltroInvalido) {
@@ -80,6 +90,12 @@ func paginaBusqueda(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		errorCeX(w, consulta, err)
+		return
+	}
+	// An empty page after the first one is past the end of the results,
+	// not a search with nothing in stock: back to the first page.
+	if len(res.Productos) == 0 && pagina > 1 {
+		http.Redirect(w, r, enlaceBusqueda(consulta, amb, orden, f, 1), http.StatusSeeOther)
 		return
 	}
 

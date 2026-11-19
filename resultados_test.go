@@ -53,6 +53,29 @@ func TestResultsPageShowsProductsAndPrices(t *testing.T) {
 	}
 }
 
+func TestPagesPastTheEndGoBackToTheFirst(t *testing.T) {
+	limitePaginas = nuevoLimitador(rafagaPaginas, ritmoPaginas)
+	llamadas := algoliaDePrueba(t, func(w http.ResponseWriter, r *http.Request) {
+		// What Algolia answers past the end: nothing at all.
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"results":[{"nbHits":0,"nbPages":0,"page":2,"hits":[]}]}`))
+	})
+	// Past what Algolia can serve: no request at all.
+	w := pedirRuta(t, "/search/?stext=nintendo&Grado=A&page=50")
+	if w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/search/?stext=nintendo&Grado=A" || llamadas.Load() != 0 {
+		t.Fatalf("page 50: %d to %q after %d requests", w.Code, w.Header().Get("Location"), llamadas.Load())
+	}
+	// Within it but empty: one request, then the first page.
+	w = pedirRuta(t, "/search/?stext=nintendo&sort=price_asc&page=3")
+	if w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/search/?stext=nintendo&sort=price_asc" || llamadas.Load() != 1 {
+		t.Fatalf("empty page 3: %d to %q after %d requests", w.Code, w.Header().Get("Location"), llamadas.Load())
+	}
+	// The first page says what there is, and never loops.
+	if w := pedirRuta(t, "/search/?stext=nintendo"); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "Nada en stock") {
+		t.Fatalf("first page: %d", w.Code)
+	}
+}
+
 func TestPaginationFollowsCeXParameters(t *testing.T) {
 	limitePaginas = nuevoLimitador(rafagaPaginas, ritmoPaginas)
 	var paginaPedida string
