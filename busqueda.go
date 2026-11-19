@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // Search goes through Algolia, the engine behind the CeX website's own
@@ -32,6 +33,10 @@ const (
 	// The website asks for up to 1000 values per filter list. The longest
 	// list measured is the stores, with 70.
 	maxValoresFaceta = 1000
+
+	// Algolia refuses a longer query with a 400 ("expected string shorter
+	// than 512 bytes"; measured: 512 bytes are accepted, 600 are not).
+	largoConsulta = 512
 )
 
 // errFiltroInvalido means Algolia refused the filters of the URL: the
@@ -133,9 +138,16 @@ func buscar(ctx context.Context, p peticionBusqueda) (resultadoBusqueda, error) 
 }
 
 // normalizar makes "PS5", " ps5 " and "ps5" share one cache entry: Algolia
-// ignores case and extra spaces anyway.
+// ignores case and extra spaces anyway. A text longer than Algolia accepts
+// is cut, at a character boundary, so a long URL is still a search and not
+// a refused request that /salud would report as a change at CeX.
 func normalizar(consulta string) string {
-	return strings.ToLower(strings.Join(strings.Fields(consulta), " "))
+	c := strings.ToLower(strings.Join(strings.Fields(consulta), " "))
+	for len(c) > largoConsulta {
+		_, n := utf8.DecodeLastRuneInString(c)
+		c = c[:len(c)-n]
+	}
+	return strings.TrimSpace(c)
 }
 
 // consultarAlgolia also returns the raw response, for the probe.

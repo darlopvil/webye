@@ -13,6 +13,7 @@ import (
 
 type consultaRecibida struct {
 	IndexName      string     `json:"indexName"`
+	Query          string     `json:"query"`
 	HitsPerPage    int        `json:"hitsPerPage"`
 	Facets         []string   `json:"facets"`
 	FacetFilters   [][]string `json:"facetFilters"`

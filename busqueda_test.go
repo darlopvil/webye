@@ -7,8 +7,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
+	"unicode/utf8"
 )
 
 // algoliaDePrueba points the search at a local server for the duration of a
@@ -26,6 +28,19 @@ func algoliaDePrueba(t *testing.T, h http.HandlerFunc) *atomic.Int32 {
 	algolia = nuevoGuardian("algolia", "application/json", nuevaCache(cacheMaxima))
 	t.Cleanup(func() { baseAlgolia, algolia = base, guard })
 	return &llamadas
+}
+
+func TestLongQueriesAreCutToWhatAlgoliaAccepts(t *testing.T) {
+	recibidas := algoliaConFacetas(t, 1, nil, nil)
+	// 600 two-byte letters: 1,200 bytes, more than twice the limit.
+	w := pedirRuta(t, "/search/?stext="+strings.Repeat("%C3%B1", 600))
+	if w.Code != http.StatusOK || len(*recibidas) != 1 {
+		t.Fatalf("status %d, %d requests", w.Code, len(*recibidas))
+	}
+	q := (*recibidas)[0][0].Query
+	if len(q) > largoConsulta || len(q) < largoConsulta-1 || !utf8.ValidString(q) {
+		t.Fatalf("query of %d bytes, valid UTF-8 %v", len(q), utf8.ValidString(q))
+	}
 }
 
 const respuestaAlgolia = `{"results":[{"nbHits":86,"nbPages":1,"page":0,"hits":[{"boxId":"5021290074811","boxName":"Rise of the Tomb Raider","categoryFriendlyName":"PS4 Juegos","sellPrice":15,"cashPriceCalculated":6,"exchangePriceCalculated":9,"imageUrls":{"small":"https://es.static.webuy.com/product_images/Juegos/PS4 Juegos/5021290074811_s.jpg","medium":"m","large":"l"},"inStockOnline":1,"inStockStore":1,"objectID":"5021290074811"}]}]}`
