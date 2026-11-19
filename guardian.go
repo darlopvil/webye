@@ -82,12 +82,9 @@ var (
 	reSinAlmacenaje = regexp.MustCompile(`(?i)(?:^|[,\s])(no-store|no-cache|private)(?:$|[,\s])`)
 )
 
-// errorRespuesta carries the response that made the guardian give up, so a
-// caller can still look at what the upstream answered.
+// errorRespuesta carries the status that made the guardian give up.
 type errorRespuesta struct {
 	Estado int
-	Tipo   string
-	Cuerpo []byte
 	causa  error
 }
 
@@ -143,8 +140,12 @@ type tiempos struct {
 
 func (t tiempos) texto() string {
 	segundos := strings.Replace(strconv.FormatFloat(t.masLenta.Seconds(), 'f', 1, 64), ".", ",", 1)
-	return fmt.Sprintf("%d peticiones; tardaron 1 s o más: %d, 3 s o más: %d, 10 s o más: %d; agotadas: %d; la más lenta: %s s",
-		t.peticiones, t.mas1, t.mas3, t.mas10, t.agotadas, segundos)
+	peticiones := "peticiones"
+	if t.peticiones == 1 {
+		peticiones = "petición"
+	}
+	return fmt.Sprintf("%d %s; tardaron 1 s o más: %d, 3 s o más: %d, 10 s o más: %d; agotadas: %d; la más lenta: %s s",
+		t.peticiones, peticiones, t.mas1, t.mas3, t.mas10, t.agotadas, segundos)
 }
 
 func nuevoCliente() *http.Client {
@@ -225,8 +226,8 @@ func (g *guardian) obtener(ctx context.Context, clave string, ttl time.Duration,
 func (g *guardian) llamar(req *http.Request, clave string, ttl time.Duration) (respuesta, error) {
 	res, err := g.cliente.Do(req)
 	if err != nil {
-		// Go's error repeats the full URL, which can carry the search
-		// terms and the Algolia key. Keep only the host.
+		// Go's error repeats the full URL, which can carry what the
+		// visitor was looking at. Keep only the host.
 		var ue *url.Error
 		if errors.As(err, &ue) {
 			return respuesta{}, fmt.Errorf("%s %s: %w", ue.Op, req.URL.Host, ue.Err)
@@ -307,7 +308,7 @@ func (g *guardian) evaluar(res *http.Response, cuerpo []byte) error {
 	switch {
 	case estado == http.StatusTooManyRequests, estado == http.StatusForbidden, estado >= 500:
 		g.pausar(res, cuerpo)
-		return &errorRespuesta{Estado: estado, Tipo: res.Header.Get("Content-Type"), Cuerpo: cuerpo, causa: errBloqueo}
+		return &errorRespuesta{Estado: estado, causa: errBloqueo}
 	case estado >= 300 && estado < 400 && !g.admiteRedireccion:
 		return fmt.Errorf("%w: status %d", errRedireccion, estado)
 	case estado == http.StatusOK && !g.tipoValido(res.Header.Get("Content-Type")):
@@ -358,7 +359,7 @@ func (g *guardian) pausar(res *http.Response, cuerpo []byte) {
 	g.pausaHasta = g.ahora().Add(duracion)
 
 	// Everything needed to understand the block, and nothing that could
-	// identify a visitor: no URL (it carries the search terms and the key),
+	// identify a visitor: no URL (it can carry what was being looked at),
 	// no body (block pages usually print the client IP), only its title.
 	titulo := ""
 	if m := reTituloHTML.FindSubmatch(cuerpo); m != nil {

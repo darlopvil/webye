@@ -92,4 +92,10 @@ func TestHealthCountsHowLongAnswersTake(t *testing.T) {
 	if !strings.Contains(linea, quiero) {
 		t.Fatalf("got %q", linea)
 	}
+	// One request is one "petición".
+	g = nuevoGuardian("prueba", "application/json", nuevaCache(cacheMaxima))
+	g.anotar(http.StatusOK, nil, time.Second)
+	if linea, _ := g.salud(); !strings.Contains(linea, " · 1 petición; ") {
+		t.Fatalf("got %q", linea)
+	}
 }

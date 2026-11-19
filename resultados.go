@@ -178,7 +178,7 @@ func enlaceBusqueda(consulta string, a ambito, orden string, f filtros, pagina i
 }
 
 // errorCeX explains what went wrong when CeX could not be reached, without
-// a 500 and without retrying.
+// a 500 and without retrying. Search, product and section pages use it.
 func errorCeX(w http.ResponseWriter, consulta string, err error) {
 	datos := datosPagina{Titulo: "CeX no responde", Consulta: consulta}
 	switch {
@@ -187,6 +187,6 @@ func errorCeX(w http.ResponseWriter, consulta string, err error) {
 	default:
 		datos.Mensaje = "No se ha podido hablar con CeX. Vuelve a intentarlo en un momento."
 	}
-	log.Printf("search failed: %v", err)
+	log.Printf("page not served, CeX failed: %v", err)
 	renderizar(w, http.StatusServiceUnavailable, "error", datos)
 }
